@@ -1,0 +1,11 @@
+{
+  "studentName": "张三",
+  "studentId": "20240001",
+  "assignmentName": "第四次作业",
+  "members": [
+    { "name": "张三", "studentId": "20240001" },
+    { "name": "李四", "studentId": "20240002" },
+    { "name": "王五", "studentId": "20240003" },
+    { "name": "赵六", "studentId": "20240004" }
+  ]
+}

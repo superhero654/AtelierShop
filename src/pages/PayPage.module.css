@@ -1,0 +1,80 @@
+.payCard {
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+  margin: var(--space-lg) 0;
+}
+
+.orderInfo {
+  text-align: left;
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  font-size: 14px;
+}
+
+.orderInfo p {
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.timer {
+  font-size: 3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  margin: var(--space-lg) 0;
+}
+
+.timerLabel {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.qrPlaceholder {
+  width: 200px;
+  height: 200px;
+  margin: var(--space-lg) auto;
+  background: var(--color-bg-alt);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.actions button {
+  flex: 1;
+}
+
+.successIcon {
+  font-size: 4rem;
+  margin-bottom: var(--space-md);
+}
+
+.failIcon {
+  font-size: 4rem;
+  margin-bottom: var(--space-md);
+  color: var(--color-error);
+}

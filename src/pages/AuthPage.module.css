@@ -1,0 +1,55 @@
+.authPage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: var(--space-lg);
+}
+
+.authCard {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-xl);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.authCard h1 {
+  font-size: 1.75rem;
+  margin-bottom: var(--space-xs);
+  text-align: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin-bottom: var(--space-lg);
+}
+
+.switchLink {
+  text-align: center;
+  margin-top: var(--space-md);
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.switchLink a {
+  font-weight: 600;
+}
+
+.submitBtn {
+  width: 100%;
+  margin-top: var(--space-sm);
+}
+
+.demoHint {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
