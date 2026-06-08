@@ -1,28 +1,82 @@
-import { useState, useContext, useCallback } from 'react';
+// src/pages/admin/AdminProductPage.jsx
+import { useState, useContext, useCallback, useMemo } from 'react';
 import {
   Table, Button, Modal, Form, Input, InputNumber, Select, Switch,
-  Space, Popconfirm, message, Tag, Image,
+  Space, message, Tag, Image, Row, Col, Tooltip, Empty,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined, EditOutlined, DeleteOutlined,
+  PictureOutlined,
+} from '@ant-design/icons';
 import { ServiceContext } from '../../contexts/ServiceContext';
 import { formatPrice } from '../../utils/format';
+import confirmDelete from '../../utils/confirmDelete';
 import ProtectedRoute from '../../components/ProtectedRoute';
+
+const STATUS_FILTER_OPTIONS = [
+  { value: '', label: '全部' },
+  { value: 'active', label: '上架' },
+  { value: 'inactive', label: '下架' },
+];
 
 function AdminProductContent() {
   const services = useContext(ServiceContext);
-  const [data, setData] = useState(() => services.good.getGoodList());
+  const [productList, setProductList] = useState(() => services.good.getGoodList());
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [imgError, setImgError] = useState(false);
   const [form] = Form.useForm();
 
-  const refresh = useCallback(() => {
-    setData([...services.good.getGoodList()]);
-  }, [services.good]);
+  // 搜索筛选状态
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
   const categories = services.category.getCategoryList();
 
+  const refresh = useCallback(() => {
+    setProductList([...services.good.getGoodList()]);
+  }, [services.good]);
+
+  const categoryOptions = useMemo(() => [
+    { value: '', label: '全部分类' },
+    ...categories.map((c) => ({ value: c.id, label: c.name })),
+  ], [categories]);
+
+  // 前端过滤：三个条件 AND 叠加
+  const displayList = useMemo(() => {
+    let result = [...productList];
+    if (searchKeyword) {
+      const kw = searchKeyword.toLowerCase();
+      result = result.filter((item) => item.name.toLowerCase().includes(kw));
+    }
+    if (filterCategory) {
+      result = result.filter((item) => item.categoryId === Number(filterCategory));
+    }
+    if (filterStatus) {
+      if (filterStatus === 'active') {
+        result = result.filter((item) => item.status === 'on');
+      } else if (filterStatus === 'inactive') {
+        result = result.filter((item) => item.status === 'off');
+      }
+    }
+    return result;
+  }, [productList, searchKeyword, filterCategory, filterStatus]);
+
+  const handleReset = () => {
+    setSearchKeyword('');
+    setFilterCategory('');
+    setFilterStatus('');
+  };
+
   const openCreate = () => {
     setEditing(null);
+    setPreviewUrl('');
+    setImgError(false);
     form.resetFields();
     form.setFieldsValue({ status: 'on', stock: 0, hot: false });
     setModalOpen(true);
@@ -30,37 +84,101 @@ function AdminProductContent() {
 
   const openEdit = (record) => {
     setEditing(record);
+    setPreviewUrl(record.img || '');
+    setImgError(false);
     form.setFieldsValue(record);
     setModalOpen(true);
   };
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editing) {
-        await services.good.updateGood({ ...editing, ...values });
-        message.success('商品已更新');
-      } else {
-        await services.good.addGood(values);
-        message.success('商品已添加');
+  const handleSubmit = () => {
+    form.validateFields().then((values) => {
+      try {
+        if (editing) {
+          services.good.updateGood({ ...editing, ...values });
+          message.success('商品已更新');
+        } else {
+          services.good.addGood(values);
+          message.success('商品已添加');
+        }
+        setModalOpen(false);
+        refresh();
+      } catch (err) {
+        message.error('操作失败，请重试');
       }
-      setModalOpen(false);
+    }).catch(() => {});
+  };
+
+  const handleDelete = (id) => {
+    const record = productList.find((item) => item.id === id);
+    setLoadingId(id);
+    confirmDelete({
+      title: '确认删除',
+      content: `确定要删除商品「${record?.name || id}」吗？此操作不可撤销。`,
+      onOk: () => {
+        try {
+          services.good.deleteGood(id);
+          message.success('商品已删除');
+          refresh();
+        } catch (err) {
+          message.error('删除失败');
+        } finally {
+          setLoadingId(null);
+        }
+      },
+    });
+  };
+
+  const handleToggleStatus = (record) => {
+    try {
+      services.good.toggleStatus(record.id);
+      message.success(record.status === 'on' ? '已下架' : '已上架');
       refresh();
-    } catch {
-      // validation failed, do nothing
+    } catch (err) {
+      message.error('操作失败');
     }
   };
 
-  const handleDelete = async (id) => {
-    await services.good.deleteGood(id);
-    message.success('商品已删除');
-    refresh();
+  // 批量上架 / 下架
+  const handleBatchStatus = (newStatus) => {
+    try {
+      selectedRowKeys.forEach((id) => {
+        const record = productList.find((item) => item.id === id);
+        if (record && record.status !== newStatus) {
+          services.good.toggleStatus(id);
+        }
+      });
+      const label = newStatus === 'on' ? '上架' : '下架';
+      message.success(`已批量${label} ${selectedRowKeys.length} 件商品`);
+      setSelectedRowKeys([]);
+      refresh();
+    } catch (err) {
+      message.error('批量操作失败');
+    }
   };
 
-  const handleToggleStatus = async (record) => {
-    await services.good.toggleStatus(record.id);
-    message.success(record.status === 'on' ? '已下架' : '已上架');
-    refresh();
+  // 批量删除
+  const handleBatchDelete = () => {
+    const selectedRecords = productList.filter((item) => selectedRowKeys.includes(item.id));
+    const names = selectedRecords.map((r) => r.name).join('、');
+    confirmDelete({
+      title: '批量删除',
+      content: `确定要删除以下 ${selectedRowKeys.length} 件商品吗？此操作不可撤销。\n${names}`,
+      onOk: () => {
+        try {
+          selectedRowKeys.forEach((id) => services.good.deleteGood(id));
+          message.success(`已删除 ${selectedRowKeys.length} 件商品`);
+          setSelectedRowKeys([]);
+          refresh();
+        } catch (err) {
+          message.error('批量删除失败');
+        }
+      },
+    });
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
   };
 
   const columns = [
@@ -72,7 +190,20 @@ function AdminProductContent() {
         <Image src={img} alt={record.name} width={48} height={48} style={{ objectFit: 'cover', borderRadius: 4 }} />
       ),
     },
-    { title: '名称', dataIndex: 'name', ellipsis: true },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      ellipsis: true,
+      render: (text) => {
+        if (!text) return '—';
+        const display = text.length > 12 ? text.slice(0, 12) + '…' : text;
+        return text.length > 12 ? (
+          <Tooltip title={text}>{display}</Tooltip>
+        ) : (
+          display
+        );
+      },
+    },
     {
       title: '价格',
       dataIndex: 'price',
@@ -114,15 +245,24 @@ function AdminProductContent() {
           <Button type="link" icon={<EditOutlined aria-hidden="true" />} onClick={() => openEdit(record)} aria-label={`编辑 ${record.name}`}>
             编辑
           </Button>
-          <Popconfirm title="确定删除该商品？" onConfirm={() => handleDelete(record.id)} okText="确定" cancelText="取消">
-            <Button type="link" danger icon={<DeleteOutlined aria-hidden="true" />} aria-label={`删除 ${record.name}`}>
-              删除
-            </Button>
-          </Popconfirm>
+          <Button
+            type="link"
+            danger
+            icon={<DeleteOutlined aria-hidden="true" />}
+            loading={loadingId === record.id}
+            onClick={() => handleDelete(record.id)}
+            aria-label={`删除 ${record.name}`}
+          >
+            删除
+          </Button>
         </Space>
       ),
     },
   ];
+
+  const customEmpty = (
+    <Empty description="暂无商品，点击右上角新增第一个商品" />
+  );
 
   return (
     <>
@@ -133,11 +273,74 @@ function AdminProductContent() {
         </Button>
       </div>
 
+      {/* 搜索与筛选栏 */}
+      <Row gutter={12} style={{ marginBottom: 16 }} align="middle">
+        <Col>
+          <Input.Search
+            placeholder="搜索商品名称"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onSearch={() => {}}
+            style={{ width: 220 }}
+            allowClear
+          />
+        </Col>
+        <Col>
+          <Select
+            value={filterCategory}
+            onChange={(val) => setFilterCategory(val)}
+            options={categoryOptions}
+            style={{ width: 160 }}
+          />
+        </Col>
+        <Col>
+          <Select
+            value={filterStatus}
+            onChange={(val) => setFilterStatus(val)}
+            options={STATUS_FILTER_OPTIONS}
+            style={{ width: 120 }}
+          />
+        </Col>
+        <Col>
+          <Button onClick={handleReset}>重置</Button>
+        </Col>
+      </Row>
+
+      {/* 批量操作提示条 */}
+      {selectedRowKeys.length > 0 && (
+        <div
+          style={{
+            background: '#e6f4ff',
+            padding: '8px 16px',
+            marginBottom: 16,
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span>已选 {selectedRowKeys.length} 件商品</span>
+          <Space>
+            <Button size="small" onClick={() => handleBatchStatus('on')}>批量上架</Button>
+            <Button size="small" onClick={() => handleBatchStatus('off')}>批量下架</Button>
+            <Button size="small" danger onClick={handleBatchDelete}>批量删除</Button>
+          </Space>
+        </div>
+      )}
+
       <Table
         rowKey="id"
+        rowSelection={rowSelection}
         columns={columns}
-        dataSource={data}
-        pagination={{ pageSize: 10, showTotal: (t) => `共 ${t} 条` }}
+        dataSource={displayList}
+        loading={loading}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50'],
+          showTotal: (t) => `共 ${t} 条`,
+        }}
+        locale={{ emptyText: customEmpty }}
       />
 
       <Modal
@@ -160,8 +363,48 @@ function AdminProductContent() {
             <Select placeholder="请选择分类…" options={categories.map((c) => ({ value: c.id, label: c.name }))} />
           </Form.Item>
           <Form.Item name="img" label="图片 URL" rules={[{ required: true, message: '请输入图片地址' }]}>
-            <Input placeholder="https://…" />
+            <Input
+              placeholder="https://…"
+              onChange={(e) => {
+                setPreviewUrl(e.target.value);
+                setImgError(false);
+              }}
+            />
           </Form.Item>
+          {/* 图片实时预览区 */}
+          <div style={{ marginBottom: 16 }}>
+            {previewUrl ? (
+              <div>
+                <Image
+                  src={previewUrl}
+                  width={80}
+                  height={80}
+                  style={{ objectFit: 'cover', borderRadius: 4 }}
+                  preview={false}
+                  onError={() => setImgError(true)}
+                />
+                {imgError && (
+                  <div style={{ color: '#ff4d4f', fontSize: 12, marginTop: 4 }}>
+                    图片链接无效
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: 80,
+                  height: 80,
+                  background: '#f0f0f0',
+                  borderRadius: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <PictureOutlined style={{ fontSize: 24, color: '#bfbfbf' }} />
+              </div>
+            )}
+          </div>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={3} placeholder="商品描述…" />
           </Form.Item>

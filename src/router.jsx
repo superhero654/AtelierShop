@@ -17,6 +17,7 @@ const OrderListPage = lazy(() => import('./pages/OrderListPage'));
 const OrderDetailPage = lazy(() => import('./pages/OrderDetailPage'));
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'));
 const AdminProductPage = lazy(() => import('./pages/admin/AdminProductPage'));
+const AdminCategoryPage = lazy(() => import('./pages/admin/AdminCategoryPage'));
 const AdminOrderPage = lazy(() => import('./pages/admin/AdminOrderPage'));
 
 function PageLoader() {
@@ -67,8 +68,9 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="/admin/products" replace /> },
+      { index: true, element: <LazyPage Component={AdminProductPage} /> },
       { path: 'products', element: <LazyPage Component={AdminProductPage} /> },
+      { path: 'categories', element: <LazyPage Component={AdminCategoryPage} /> },
       { path: 'orders', element: <LazyPage Component={AdminOrderPage} /> },
     ],
   },
