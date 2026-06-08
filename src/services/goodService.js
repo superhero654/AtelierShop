@@ -1,89 +1,58 @@
-import { defaultGoods } from '../mock/seedData';
-import { loadFromStorage, saveToStorage } from '../utils/storage';
-
-const STORAGE_KEY = 'goodList';
+/**
+ * 商品服务 — 缓存式读写
+ * 数据从 API 加载到本地缓存，读取同步，写入异步
+ */
+import { api } from '../utils/api';
 
 class GoodService {
   list = [];
 
-  constructor() {
-    this._loadData();
-  }
-
-  getGoodById(id) {
-    return this.list.find((item) => item.id === id);
+  /** 从 API 加载数据 */
+  async fetchAll() {
+    this.list = await api.get('/goods');
   }
 
   getGoodList(filters = {}) {
     let result = [...this.list];
-    if (filters.status) {
-      result = result.filter((item) => item.status === filters.status);
-    }
-    if (filters.categoryId) {
-      result = result.filter((item) => item.categoryId === Number(filters.categoryId));
-    }
-    if (filters.hot) {
-      result = result.filter((item) => item.hot);
-    }
+    if (filters.status) result = result.filter((g) => g.status === filters.status);
+    if (filters.categoryId) result = result.filter((g) => g.categoryId === Number(filters.categoryId));
+    if (filters.hot) result = result.filter((g) => g.hot);
     if (filters.keyword) {
       const kw = filters.keyword.toLowerCase();
       result = result.filter(
-        (item) =>
-          item.name.toLowerCase().includes(kw) ||
-          (item.description && item.description.toLowerCase().includes(kw))
+        (g) =>
+          g.name.toLowerCase().includes(kw) ||
+          (g.description && g.description.toLowerCase().includes(kw))
       );
     }
     return result;
   }
 
-  addGood(good) {
-    const maxId = this.list.reduce((max, item) => Math.max(max, item.id), 0);
-    const newGood = {
-      status: 'on',
-      hot: false,
-      stock: 0,
-      description: '',
-      ...good,
-      id: maxId + 1,
-    };
-    this.list.push(newGood);
-    this._saveData();
-    return newGood;
+  getGoodById(id) {
+    return this.list.find((g) => g.id === id) || null;
   }
 
-  deleteGood(id) {
-    this.list = this.list.filter((item) => item.id !== id);
-    this._saveData();
+  async addGood(good) {
+    const created = await api.post('/goods', good);
+    this.list.push(created);
+    return created;
   }
 
-  updateGood(good) {
-    this.list = this.list.map((item) =>
-      item.id === good.id ? { ...item, ...good } : item
-    );
-    this._saveData();
+  async updateGood(good) {
+    const updated = await api.put(`/goods/${good.id}`, good);
+    this.list = this.list.map((g) => (g.id === good.id ? updated : g));
+    return updated;
   }
 
-  toggleStatus(id) {
-    const good = this.getGoodById(id);
-    if (good) {
-      good.status = good.status === 'on' ? 'off' : 'on';
-      this._saveData();
-    }
-    return good;
+  async deleteGood(id) {
+    await api.delete(`/goods/${id}`);
+    this.list = this.list.filter((g) => g.id !== id);
   }
 
-  _saveData() {
-    saveToStorage(STORAGE_KEY, this.list);
-  }
-
-  _loadData() {
-    const list = loadFromStorage(STORAGE_KEY, null);
-    if (list) {
-      this.list = list;
-    } else {
-      this.list = [...defaultGoods];
-      this._saveData();
-    }
+  async toggleStatus(id) {
+    const updated = await api.patch(`/goods/${id}/toggle-status`);
+    this.list = this.list.map((g) => (g.id === id ? updated : g));
+    return updated;
   }
 }
 

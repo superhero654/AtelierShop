@@ -31,44 +31,50 @@ export function AuthProvider({ children }) {
     }
   }, [admin]);
 
-  const loginUser = useCallback((username, password) => {
-    const result = authService.loginUser(username, password);
-    if (result) {
+  const loginUser = useCallback(async (username, password) => {
+    try {
+      const result = await authService.loginUser(username, password);
       setUser(result);
       return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message || '用户名或密码错误' };
     }
-    return { success: false, error: '用户名或密码错误' };
   }, []);
 
-  const registerUser = useCallback((data) => {
-    const result = authService.registerUser(data);
-    if (result.error) {
-      return { success: false, error: result.error };
+  const registerUser = useCallback(async (data) => {
+    try {
+      const result = await authService.registerUser(data);
+      setUser(result);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message || '注册失败' };
     }
-    setUser(result);
-    return { success: true };
   }, []);
 
   const logoutUser = useCallback(() => {
     setUser(null);
   }, []);
 
-  const updateUserProfile = useCallback((data) => {
+  const updateUserProfile = useCallback(async (data) => {
     if (!user) return;
-    const updated = authService.updateUser(user.id, data);
-    if (updated) {
+    try {
+      const updated = await authService.updateUser(user.id, data);
       const { password, ...safe } = updated;
       setUser(safe);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
     }
   }, [user]);
 
-  const loginAdmin = useCallback((username, password) => {
-    const result = authService.loginAdmin(username, password);
-    if (result) {
+  const loginAdmin = useCallback(async (username, password) => {
+    try {
+      const result = await authService.loginAdmin(username, password);
       setAdmin(result);
       return { success: true, admin: result };
+    } catch (err) {
+      return { success: false, error: err.message || '管理员账号或密码错误' };
     }
-    return { success: false, error: '管理员账号或密码错误' };
   }, []);
 
   const logoutAdmin = useCallback(() => {

@@ -9,9 +9,9 @@ export default function AdminLoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     setLoading(true);
-    const result = loginAdmin(values.username, values.password);
+    const result = await loginAdmin(values.username, values.password);
     setLoading(false);
     if (result.success) {
       message.success('登录成功');

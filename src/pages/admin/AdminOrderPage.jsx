@@ -18,8 +18,8 @@ function AdminOrderContent() {
     setData([...services.order.getAllOrders()]);
   }, [services.order]);
 
-  const handleShip = (id) => {
-    const ok = services.order.shipOrder(id);
+  const handleShip = async (id) => {
+    const ok = await services.order.shipOrder(id);
     if (ok) {
       message.success('已发货');
       refresh();
@@ -28,8 +28,8 @@ function AdminOrderContent() {
     }
   };
 
-  const handleStatusChange = (id, status) => {
-    services.order.updateOrderStatus(id, status);
+  const handleStatusChange = async (id, status) => {
+    await services.order.updateOrderStatus(id, status);
     message.success('状态已更新');
     refresh();
   };

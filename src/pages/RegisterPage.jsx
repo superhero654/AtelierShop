@@ -30,11 +30,11 @@ export default function RegisterPage() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    const result = registerUser({
+    const result = await registerUser({
       username: form.username,
       email: form.email,
       password: form.password,

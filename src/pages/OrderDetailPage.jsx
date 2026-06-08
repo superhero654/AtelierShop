@@ -114,8 +114,8 @@ export default function OrderDetailPage() {
               type="button"
               className="btn btn-primary"
               style={{ width: '100%', marginTop: 16 }}
-              onClick={() => {
-                services.order.completeOrder(order.id);
+              onClick={async () => {
+                await services.order.completeOrder(order.id);
                 navigate(0);
               }}
             >

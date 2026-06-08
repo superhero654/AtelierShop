@@ -1,13 +1,13 @@
-import { defaultCategories } from '../mock/seedData';
-import { loadFromStorage, saveToStorage } from '../utils/storage';
-
-const STORAGE_KEY = 'categoryList';
+/**
+ * 分类服务 — 缓存式读写
+ */
+import { api } from '../utils/api';
 
 class CategoryService {
   list = [];
 
-  constructor() {
-    this._loadData();
+  async fetchAll() {
+    this.list = await api.get('/categories');
   }
 
   getCategoryList() {
@@ -15,41 +15,24 @@ class CategoryService {
   }
 
   getCategoryById(id) {
-    return this.list.find((item) => item.id === id);
+    return this.list.find((c) => c.id === id) || null;
   }
 
-  addCategory(category) {
-    const maxId = this.list.reduce((max, item) => Math.max(max, item.id), 0);
-    const newCategory = { ...category, id: maxId + 1 };
-    this.list.push(newCategory);
-    this._saveData();
-    return newCategory;
+  async addCategory(category) {
+    const created = await api.post('/categories', category);
+    this.list.push(created);
+    return created;
   }
 
-  updateCategory(category) {
-    this.list = this.list.map((item) =>
-      item.id === category.id ? { ...item, ...category } : item
-    );
-    this._saveData();
+  async updateCategory(category) {
+    const updated = await api.put(`/categories/${category.id}`, category);
+    this.list = this.list.map((c) => (c.id === category.id ? updated : c));
+    return updated;
   }
 
-  deleteCategory(id) {
-    this.list = this.list.filter((item) => item.id !== id);
-    this._saveData();
-  }
-
-  _saveData() {
-    saveToStorage(STORAGE_KEY, this.list);
-  }
-
-  _loadData() {
-    const list = loadFromStorage(STORAGE_KEY, null);
-    if (list) {
-      this.list = list;
-    } else {
-      this.list = [...defaultCategories];
-      this._saveData();
-    }
+  async deleteCategory(id) {
+    await api.delete(`/categories/${id}`);
+    this.list = this.list.filter((c) => c.id !== id);
   }
 }
 

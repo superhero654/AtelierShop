@@ -26,7 +26,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    const result = loginUser(form.username, form.password);
+    const result = await loginUser(form.username, form.password);
     setLoading(false);
     if (result.success) {
       navigate(decodeURIComponent(redirect));

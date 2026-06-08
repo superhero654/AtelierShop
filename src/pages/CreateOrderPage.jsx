@@ -60,7 +60,7 @@ function CreateOrderContent() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
@@ -71,7 +71,7 @@ function CreateOrderContent() {
       price: item.price,
     }));
 
-    const order = services.order.createOrder({
+    const order = await services.order.createOrder({
       userId: user.id,
       items,
       address: form.address,

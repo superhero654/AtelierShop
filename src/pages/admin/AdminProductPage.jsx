@@ -34,28 +34,31 @@ function AdminProductContent() {
     setModalOpen(true);
   };
 
-  const handleSubmit = () => {
-    form.validateFields().then((values) => {
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
       if (editing) {
-        services.good.updateGood({ ...editing, ...values });
+        await services.good.updateGood({ ...editing, ...values });
         message.success('商品已更新');
       } else {
-        services.good.addGood(values);
+        await services.good.addGood(values);
         message.success('商品已添加');
       }
       setModalOpen(false);
       refresh();
-    });
+    } catch {
+      // validation failed, do nothing
+    }
   };
 
-  const handleDelete = (id) => {
-    services.good.deleteGood(id);
+  const handleDelete = async (id) => {
+    await services.good.deleteGood(id);
     message.success('商品已删除');
     refresh();
   };
 
-  const handleToggleStatus = (record) => {
-    services.good.toggleStatus(record.id);
+  const handleToggleStatus = async (record) => {
+    await services.good.toggleStatus(record.id);
     message.success(record.status === 'on' ? '已下架' : '已上架');
     refresh();
   };

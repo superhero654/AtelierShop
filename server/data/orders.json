@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "userId": 1,
+        "orderNo": "202601010001",
+        "createTime": "2026-01-01T10:00:00",
+        "payTime": "2026-01-01T10:05:00",
+        "status": 3,
+        "totalPrice": 1299,
+        "address": "北京市朝阳区建国路 88 号",
+        "receiver": "演示用户",
+        "phone": "13800138000",
+        "items": [
+            {
+                "goodId": 1,
+                "count": 1,
+                "price": 1299
+            }
+        ],
+        "logistics": {
+            "company": "顺丰速运",
+            "trackingNo": "SF1234567890",
+            "status": "已签收"
+        }
+    }
+]

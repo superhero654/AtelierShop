@@ -45,9 +45,9 @@ function PayContent() {
     return null;
   }
 
-  const handlePay = (success) => {
+  const handlePay = async (success) => {
     if (success) {
-      services.order.payOrder(parsedOrderId);
+      await services.order.payOrder(parsedOrderId);
       setStatus('success');
       setTimeout(() => navigate(`/orderDetail/${orderId}`), 1500);
     } else {
