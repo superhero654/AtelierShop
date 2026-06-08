@@ -1,28 +1,39 @@
+/* ===== 京东风格购物车 ===== */
 .cartTable {
   background: var(--color-surface);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
 }
 
 .header {
   display: grid;
   grid-template-columns: 40px 1fr 120px 120px 80px;
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
-  background: var(--color-bg-alt);
+  padding: 14px var(--space-lg);
+  background: #fafafa;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-muted);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .row {
   display: grid;
   grid-template-columns: 40px 1fr 120px 120px 80px;
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
+  padding: 16px var(--space-lg);
   align-items: center;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition-fast);
+}
+
+.row:hover {
+  background: #fafafa;
+}
+
+.row:last-child {
+  border-bottom: none;
 }
 
 .product {
@@ -36,55 +47,69 @@
   width: 72px;
   height: 72px;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: 2px;
+  border: 1px solid var(--color-border-light);
   flex-shrink: 0;
 }
 
 .productName {
   font-weight: 500;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--color-text);
+}
+
+.productName:hover {
+  color: var(--color-primary);
 }
 
 .price {
   font-variant-numeric: tabular-nums;
-  color: var(--color-accent);
+  color: var(--color-primary);
   font-weight: 600;
+  font-size: 15px;
 }
 
 .quantity {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 0;
 }
 
 .qtyBtn {
   width: 28px;
   height: 28px;
-  border: 1.5px solid var(--color-border);
-  background: var(--color-surface);
-  border-radius: var(--radius-sm);
-  font-size: 16px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color var(--transition-fast);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
 }
 
 .qtyBtn:hover {
-  border-color: var(--color-accent);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .qtyBtn:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .qtyValue {
-  min-width: 32px;
+  min-width: 36px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  line-height: 26px;
 }
 
 .removeBtn {
@@ -92,32 +117,36 @@
   border: none;
   color: var(--color-text-muted);
   font-size: 13px;
-  padding: 4px;
-  transition: color var(--transition-fast);
+  padding: 4px 8px;
+  border-radius: 2px;
+  transition: all var(--transition-fast);
 }
 
 .removeBtn:hover {
   color: var(--color-error);
+  background: #fff0f0;
 }
 
 .footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   background: var(--color-surface);
-  border-radius: var(--radius-md);
-  margin-top: var(--space-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  margin-top: 16px;
+  border: 1px solid var(--color-border-light);
 }
 
 .total {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 16px;
+  color: var(--color-text);
 }
 
 .total span {
-  color: var(--color-accent);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 20px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -129,19 +158,16 @@
   .row {
     grid-template-columns: 32px 1fr;
     grid-template-rows: auto auto;
+    padding: 12px var(--space-md);
   }
 
-  .product {
-    grid-column: 2;
-  }
-
-  .price, .quantity, .removeBtn {
-    grid-column: 2;
-    justify-self: start;
-  }
+  .product { grid-column: 2; }
+  .price, .quantity { grid-column: 2; justify-self: start; }
+  .removeBtn { grid-column: 2; justify-self: start; }
 
   .footer {
     flex-direction: column;
     gap: var(--space-md);
+    padding: var(--space-md);
   }
 }

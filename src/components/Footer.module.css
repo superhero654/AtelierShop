@@ -1,8 +1,10 @@
+/* ===== 京东风格页脚 ===== */
 .footer {
   margin-top: auto;
-  background: var(--color-text);
-  color: rgba(255, 252, 248, 0.7);
+  background: #2d2d2d;
+  color: #b0b0b0;
   padding: var(--space-xl) 0 var(--space-lg);
+  border-top: 3px solid var(--color-primary);
 }
 
 .inner {
@@ -15,48 +17,51 @@
 }
 
 .brand {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  color: var(--color-surface);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
   margin-bottom: var(--space-sm);
 }
 
+.brand span {
+  color: var(--color-primary);
+}
+
 .desc {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.8;
   max-width: 320px;
+  color: #999;
 }
 
 .col h4 {
-  font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-surface);
+  color: #eee;
   margin-bottom: var(--space-md);
 }
 
 .col a {
   display: block;
-  color: rgba(255, 252, 248, 0.6);
-  font-size: 14px;
-  margin-bottom: var(--space-sm);
+  color: #999;
+  font-size: 13px;
+  margin-bottom: 10px;
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 .col a:hover {
-  color: var(--color-surface);
+  color: #fff;
 }
 
 .bottom {
   max-width: 1200px;
   margin: var(--space-lg) auto 0;
   padding: var(--space-md) var(--space-lg) 0;
-  border-top: 1px solid rgba(255, 252, 248, 0.1);
-  font-size: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
   text-align: center;
+  color: #777;
 }
 
 @media (max-width: 768px) {

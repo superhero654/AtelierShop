@@ -1,15 +1,20 @@
+/* ===== 京东风格商品详情 ===== */
 .detail {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 450px 1fr;
   gap: var(--space-xl);
   align-items: start;
+  background: var(--color-surface);
+  padding: var(--space-xl);
+  border-radius: var(--radius-sm);
 }
 
 .imageWrap {
   position: relative;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  background: var(--color-bg-alt);
+  background: #fafafa;
+  border: 1px solid var(--color-border-light);
   aspect-ratio: 1;
 }
 
@@ -20,29 +25,45 @@
 }
 
 .info h1 {
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
   margin-bottom: var(--space-md);
+  line-height: 1.4;
 }
 
 .price {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-accent);
-  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #fff5f5, #ffeaea);
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
   margin-bottom: var(--space-lg);
 }
 
-.desc {
+.price .label {
+  font-size: 13px;
   color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.price .value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.desc {
+  color: var(--color-text-secondary);
   line-height: 1.8;
   margin-bottom: var(--space-lg);
   padding-bottom: var(--space-lg);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: 14px;
 }
 
 .meta {
   display: flex;
-  gap: var(--space-lg);
+  gap: var(--space-xl);
   font-size: 14px;
   color: var(--color-text-muted);
   margin-bottom: var(--space-lg);
@@ -50,6 +71,8 @@
 
 .meta span {
   font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .actions {
@@ -68,32 +91,35 @@
 .qtyLabel {
   font-size: 14px;
   font-weight: 500;
+  color: var(--color-text-secondary);
 }
 
 .qtyControl {
   display: flex;
   align-items: center;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .qtyBtn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: none;
-  background: var(--color-bg-alt);
-  font-size: 18px;
+  background: #fafafa;
+  font-size: 16px;
   cursor: pointer;
+  color: var(--color-text);
   transition: background-color var(--transition-fast);
 }
 
 .qtyBtn:hover {
-  background: var(--color-border);
+  background: var(--color-border-light);
+  color: var(--color-primary);
 }
 
 .qtyBtn:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -102,6 +128,10 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  font-size: 14px;
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  line-height: 32px;
 }
 
 .toast {
@@ -109,13 +139,13 @@
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 12px 24px;
-  background: var(--color-text);
-  color: white;
-  border-radius: var(--radius-sm);
+  padding: 10px 24px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  border-radius: 4px;
   font-size: 14px;
   z-index: 200;
-  animation: slideUp 300ms ease;
+  animation: slideUp 0.3s ease;
 }
 
 @keyframes slideUp {
@@ -126,11 +156,14 @@
 @media (max-width: 768px) {
   .detail {
     grid-template-columns: 1fr;
+    padding: var(--space-md);
+  }
+
+  .imageWrap {
+    max-width: 100%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .toast {
-    animation: none;
-  }
+  .toast { animation: none; }
 }

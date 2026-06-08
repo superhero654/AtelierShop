@@ -1,85 +1,89 @@
+/* ===== 京东风格商品卡片 ===== */
 .card {
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  border: 1px solid transparent;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 12px rgba(200, 30, 43, 0.1);
+  color: inherit;
 }
 
 .imageWrap {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
-  background: var(--color-bg-alt);
+  background: #fafafa;
 }
 
 .image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 400ms ease;
+  transition: transform 0.4s ease;
 }
 
 .card:hover .image {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .hotTag {
   position: absolute;
-  top: var(--space-sm);
-  left: var(--space-sm);
-  padding: 4px 10px;
-  background: var(--color-accent);
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  border-radius: var(--radius-sm);
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #e02020, #c81e2b);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 2px;
+  line-height: 1.6;
 }
 
 .info {
-  padding: var(--space-md);
+  padding: 12px;
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: #fff;
 }
 
 .name {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: var(--space-xs);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.35;
+  line-height: 1.4;
+  min-height: 39px;
+}
+
+.card:hover .name {
+  color: var(--color-primary);
 }
 
 .price {
-  font-size: 1.125rem;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--color-accent);
+  color: var(--color-primary);
   font-variant-numeric: tabular-nums;
   margin-top: auto;
+  font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card:hover {
-    transform: none;
-  }
-
-  .card:hover .image {
-    transform: none;
-  }
+  .card:hover { transform: none; }
+  .card:hover .image { transform: none; }
 }

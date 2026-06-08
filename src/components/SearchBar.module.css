@@ -1,43 +1,52 @@
+/* ===== 京东风格搜索框 ===== */
 .form {
   display: flex;
   width: 100%;
+  border: 2px solid var(--color-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: box-shadow var(--transition-fast);
+}
+
+.form:focus-within {
+  box-shadow: 0 0 0 3px rgba(200, 30, 43, 0.15);
 }
 
 .input {
   flex: 1;
-  padding: 10px 14px;
-  border: 1.5px solid var(--color-border);
-  border-right: none;
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-  background: var(--color-surface);
+  padding: 8px 12px;
+  border: none;
+  background: #fff;
   font-size: 14px;
   color: var(--color-text);
   min-width: 0;
-}
-
-.input:focus {
-  border-color: var(--color-accent);
   outline: none;
 }
 
+.input::placeholder {
+  color: #c0c0c0;
+}
+
 .button {
-  padding: 10px 16px;
-  background: var(--color-accent);
-  color: white;
+  padding: 8px 20px;
+  background: var(--color-primary);
+  color: #fff;
   border: none;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   transition: background-color var(--transition-fast);
   white-space: nowrap;
 }
 
 .button:hover {
-  background: var(--color-accent-hover);
+  background: var(--color-primary-hover);
 }
 
 .button:focus-visible {
   outline: none;
-  box-shadow: var(--focus-ring);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
 }

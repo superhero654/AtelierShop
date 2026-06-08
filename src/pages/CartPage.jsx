@@ -43,14 +43,13 @@ function CartContent() {
 
       <div className={styles.cartTable}>
         <div className={styles.header} role="row">
-          <span>
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={(e) => toggleSelectAll(e.target.checked)}
-              aria-label="全选"
-            />
-          </span>
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={(e) => toggleSelectAll(e.target.checked)}
+            aria-label="全选"
+            style={{ margin: 0 }}
+          />
           <span>商品</span>
           <span>单价</span>
           <span>数量</span>

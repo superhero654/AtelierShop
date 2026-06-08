@@ -1,13 +1,14 @@
+/* ===== 京东风格首页 ===== */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
 }
 
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
+    gap: 10px;
   }
 }
 
@@ -18,11 +19,18 @@
 }
 
 .hero {
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-lg);
+  background: var(--color-surface);
+  padding: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .section {
   margin-bottom: var(--space-2xl);
+  background: var(--color-surface);
+  padding: var(--space-lg);
+  border-radius: var(--radius-sm);
 }
 
 .sectionHeader {
@@ -35,16 +43,23 @@
 .moreLink {
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-accent);
+  color: var(--color-text-muted);
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
 .moreLink:hover {
-  text-decoration: underline;
+  color: var(--color-primary);
 }
 
 .searchResult {
-  margin-bottom: var(--space-md);
-  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+  color: var(--color-text-secondary);
   font-size: 14px;
+}
+
+.searchResult em {
+  color: var(--color-primary);
+  font-style: normal;
+  font-weight: 600;
 }

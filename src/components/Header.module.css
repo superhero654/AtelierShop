@@ -1,70 +1,92 @@
+/* ===== 京东风格 Header — 三列布局：左 | 中（搜索）| 右 ===== */
 .header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 252, 248, 0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-border);
+  background: #ffffff;
+  border-bottom: 2px solid var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .inner {
   display: flex;
   align-items: center;
   gap: var(--space-lg);
-  padding: var(--space-md) var(--space-lg);
+  padding: 10px var(--space-lg);
   max-width: 1200px;
   margin: 0 auto;
 }
 
+/* ---- 左区：Logo + 导航 ---- */
+.leftGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  flex-shrink: 0;
+}
+
 .logo {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-primary);
   text-decoration: none;
   white-space: nowrap;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.5px;
 }
 
 .logo span {
-  color: var(--color-accent);
-}
-
-.searchWrap {
-  flex: 1;
-  max-width: 480px;
+  color: var(--color-text);
+  font-weight: 400;
 }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-lg);
 }
 
 .navLink {
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  padding: 6px 0;
+  padding: 4px 0;
   position: relative;
   transition: color var(--transition-fast);
+  white-space: nowrap;
 }
 
 .navLink:hover,
 .navLinkActive {
-  color: var(--color-text);
+  color: var(--color-primary);
 }
 
 .navLinkActive::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
   height: 2px;
-  background: var(--color-accent);
+  background: var(--color-primary);
   border-radius: 1px;
+}
+
+/* ---- 中区：搜索框 ---- */
+.searchWrap {
+  flex: 1;
+  max-width: 540px;
+  min-width: 200px;
+}
+
+/* ---- 右区：购物车 + 用户 ---- */
+.rightGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .cartLink {
@@ -72,50 +94,52 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: var(--color-text);
+  width: 36px;
+  height: 36px;
+  color: var(--color-text-secondary);
   text-decoration: none;
   border-radius: var(--radius-sm);
-  transition: background-color var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
 }
 
 .cartLink:hover {
-  background: var(--color-bg-alt);
-  color: var(--color-text);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 .badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: 0;
+  right: -4px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: var(--color-accent);
-  color: white;
+  background: var(--color-primary);
+  color: #fff;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  box-shadow: 0 1px 3px rgba(200, 30, 43, 0.3);
 }
 
 .userLink {
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   text-decoration: none;
   white-space: nowrap;
 }
 
 .userLink:hover {
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
+/* ---- 响应式 ---- */
 @media (max-width: 768px) {
   .inner {
     flex-wrap: wrap;
@@ -123,17 +147,30 @@
     padding: var(--space-sm) var(--space-md);
   }
 
+  .leftGroup {
+    gap: var(--space-md);
+  }
+
   .searchWrap {
     order: 3;
     flex: 1 1 100%;
     max-width: none;
+    min-width: 0;
   }
 
   .nav {
-    gap: var(--space-sm);
+    gap: var(--space-md);
   }
 
   .navLink {
     font-size: 13px;
+  }
+
+  .logo {
+    font-size: 18px;
+  }
+
+  .rightGroup {
+    margin-left: auto;
   }
 }
