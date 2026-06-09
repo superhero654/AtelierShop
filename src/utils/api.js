@@ -1,9 +1,10 @@
 /**
  * API 请求工具
- * 通过 Vite proxy 转发到 PHP 后端 (localhost:3001)
+ * - 开发环境：通过 Vite proxy 转发到 PHP 后端 (localhost:3001)
+ * - 生产环境：通过 VITE_API_BASE 环境变量指向线上后端
  */
 
-const BASE = '/api';
+const BASE = import.meta.env.VITE_API_BASE || '/api';
 
 async function request(method, path, data = null) {
   const headers = { 'Content-Type': 'application/json' };

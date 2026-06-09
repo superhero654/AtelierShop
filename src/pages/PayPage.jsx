@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { ServiceContext } from '../contexts/ServiceContext';
 import { formatPrice, formatDate } from '../utils/format';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -41,8 +41,7 @@ function PayContent() {
   }
 
   if (order.status !== 0) {
-    navigate(`/orderDetail/${orderId}`);
-    return null;
+    return <Navigate to={`/orderDetail/${orderId}`} replace />;
   }
 
   const handlePay = async (success) => {

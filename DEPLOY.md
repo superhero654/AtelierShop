@@ -102,11 +102,44 @@ server {
 }
 ```
 
-### 方式二：前后端分离部署
+### 方式二：前后端分离部署（推荐）
 
-前端部署到静态托管（Vercel、Netlify、OSS 等），后端部署到 VPS。
+前端（Vercel）+ 后端（Zeabur）分离部署。
 
-需要修改 `src/utils/api.js` 中的 API 地址（或通过环境变量配置）。
+#### 1. 后端部署到 Zeabur
+
+[Zeabur](https://zeabur.com) 是一个国内访问快的云部署平台，支持 PHP。
+
+**部署步骤：**
+
+1. 打开 [Zeabur](https://zeabur.com) 并登录
+2. 点击 **创建项目** → **从 GitHub 导入**
+3. 选择本仓库，部署目录选 `server/`
+4. Zeabur 自动检测为 PHP 项目，按默认配置部署
+5. 部署完成后，得到一个 URL，例如 `https://atelier-shop-api.zeabur.app`
+
+**验证：** 访问 `https://你的服务名.zeabur.app/api/health`，返回 `{"status":"ok"}` 即成功。
+
+#### 2. 前端部署到 Vercel
+
+前端构建后部署到 Vercel，需要配置环境变量指向 Zeabur 后端。
+
+**方式 A — 在 Vercel 项目设置中添加环境变量：**
+```
+VITE_API_BASE = https://你的-zeabur-服务名.zeabur.app
+```
+
+**方式 B — 或修改 `.env.production` 文件后直接部署：**
+编辑 `.env.production`，把 URL 替换为实际 Zeabur 地址，然后：
+
+```bash
+npm run build
+vercel --prod
+```
+
+#### 3. 更新 vercel.json
+
+如果使用 Vercel 部署前端，`vercel.json` 已配置 SPA 路由重写，无需额外修改。
 
 ---
 
