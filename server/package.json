@@ -1,9 +1,0 @@
-{
-  "name": "atelier-shop-server",
-  "private": true,
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "php -S localhost:3001 server/public/index.php",
-    "start": "php -S 0.0.0.0:3001 server/public/index.php"
-  }
-}
