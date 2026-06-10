@@ -1,0 +1,79 @@
+[
+    {
+        "id": 1,
+        "userId": 1,
+        "orderNo": "202601010001",
+        "createTime": "2026-01-01T10:00:00",
+        "payTime": "2026-01-01T10:05:00",
+        "status": 3,
+        "totalPrice": 1299,
+        "address": "北京市朝阳区建国路 88 号",
+        "receiver": "演示用户",
+        "phone": "13800138000",
+        "items": [
+            {
+                "goodId": 1,
+                "count": 1,
+                "price": 1299
+            }
+        ],
+        "logistics": {
+            "company": "顺丰速运",
+            "trackingNo": "SF1234567890",
+            "status": "已签收"
+        }
+    },
+    {
+        "userId": 1,
+        "orderNo": "20260609112130250",
+        "createTime": "2026-06-09T11:21:30+00:00",
+        "payTime": "2026-06-09T11:21:33+00:00",
+        "status": 3,
+        "totalPrice": 1299,
+        "address": "北京市朝阳区建国路 88 号",
+        "receiver": "演示用户",
+        "phone": "13800138000",
+        "items": [
+            {
+                "goodId": 1,
+                "count": 1,
+                "price": 1299
+            }
+        ],
+        "logistics": {
+            "company": "顺丰速运",
+            "trackingNo": "SF1781004413",
+            "status": "已签收"
+        },
+        "id": 2
+    },
+    {
+        "userId": 1,
+        "orderNo": "20260609112155325",
+        "createTime": "2026-06-09T11:21:55+00:00",
+        "payTime": "2026-06-09T11:21:57+00:00",
+        "status": 3,
+        "totalPrice": 3798,
+        "address": "北京市朝阳区建国路 88 号",
+        "receiver": "演示用户",
+        "phone": "13800138000",
+        "items": [
+            {
+                "goodId": 1,
+                "count": 1,
+                "price": 1299
+            },
+            {
+                "goodId": 2,
+                "count": 1,
+                "price": 2499
+            }
+        ],
+        "logistics": {
+            "company": "顺丰速运",
+            "trackingNo": "SF1781004411",
+            "status": "已签收"
+        },
+        "id": 3
+    }
+]
