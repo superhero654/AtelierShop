@@ -1,14 +1,29 @@
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ServiceContext } from '../contexts/ServiceContext';
 import Carousel from '../components/Carousel';
 import ProductCard from '../components/ProductCard';
+import { carouselSlides } from '../mock/seedData';
+import { fetchCarousel } from '../services/carouselService';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
   const services = useContext(ServiceContext);
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get('q') || '';
+  const [slides, setSlides] = useState(carouselSlides);
+
+  useEffect(() => {
+    fetchCarousel()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setSlides(data);
+        }
+      })
+      .catch(() => {
+        setSlides(carouselSlides);
+      });
+  }, []);
 
   const products = useMemo(() => {
     const filters = { status: 'on' };
@@ -25,7 +40,7 @@ export default function HomePage() {
     <div className="container">
       {!keyword && (
         <section className={styles.hero} aria-label="轮播推荐">
-          <Carousel />
+          <Carousel slides={slides} />
         </section>
       )}
 

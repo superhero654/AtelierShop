@@ -2,16 +2,17 @@
 import { useState, useContext, useCallback, useMemo } from 'react';
 import {
   Table, Button, Modal, Form, Input, InputNumber, Select, Switch,
-  Space, message, Tag, Image, Row, Col, Tooltip, Empty,
+  Space, message, Tag, Image, Row, Col, Tooltip, Empty, Upload,
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined,
-  PictureOutlined,
+  PictureOutlined, UploadOutlined,
 } from '@ant-design/icons';
 import { ServiceContext } from '../../contexts/ServiceContext';
 import { formatPrice } from '../../utils/format';
 import confirmDelete from '../../utils/confirmDelete';
 import ProtectedRoute from '../../components/ProtectedRoute';
+import { uploadFile } from '../../services/uploadService';
 
 const STATUS_FILTER_OPTIONS = [
   { value: '', label: '全部' },
@@ -29,6 +30,7 @@ function AdminProductContent() {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [previewUrl, setPreviewUrl] = useState('');
   const [imgError, setImgError] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [form] = Form.useForm();
 
   // 搜索筛选状态
@@ -362,14 +364,41 @@ function AdminProductContent() {
           <Form.Item name="categoryId" label="分类" rules={[{ required: true, message: '请选择分类' }]}>
             <Select placeholder="请选择分类…" options={categories.map((c) => ({ value: c.id, label: c.name }))} />
           </Form.Item>
-          <Form.Item name="img" label="图片 URL" rules={[{ required: true, message: '请输入图片地址' }]}>
-            <Input
-              placeholder="https://…"
-              onChange={(e) => {
-                setPreviewUrl(e.target.value);
-                setImgError(false);
-              }}
-            />
+          <Form.Item name="img" label="商品图片" rules={[{ required: true, message: '请上传商品图片' }]}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Upload
+                accept="image/*"
+                showUploadList={false}
+                customRequest={async ({ file, onSuccess, onError }) => {
+                  setUploading(true);
+                  try {
+                    const url = await uploadFile(file);
+                    form.setFieldsValue({ img: url });
+                    setPreviewUrl(url);
+                    setImgError(false);
+                    onSuccess(url);
+                    message.success('图片上传成功');
+                  } catch (err) {
+                    onError(err);
+                    message.error(err.message || '图片上传失败');
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              >
+                <Button icon={<UploadOutlined />} loading={uploading}>
+                  上传到 OSS
+                </Button>
+              </Upload>
+              <Input
+                placeholder="或手动输入图片 URL"
+                onChange={(e) => {
+                  form.setFieldsValue({ img: e.target.value });
+                  setPreviewUrl(e.target.value);
+                  setImgError(false);
+                }}
+              />
+            </Space>
           </Form.Item>
           {/* 图片实时预览区 */}
           <div style={{ marginBottom: 16 }}>

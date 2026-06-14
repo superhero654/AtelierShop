@@ -3,114 +3,84 @@
 ## 项目结构
 
 ```
-LW-01-01/
-├── api/                 # Node.js/Express 后端（Vercel Serverless）
-│   ├── index.js         # Express 入口
-│   ├── db.js            # 内存数据库
-│   ├── seed.js          # 种子数据
-│   └── routes/          # 接口路由
-│       ├── goods.js
-│       ├── categories.js
-│       ├── auth.js
-│       ├── orders.js
-│       └── carousel.js
-├── src/                 # 前端源码（React）
-│   ├── pages/
-│   ├── services/
-│   ├── contexts/
-│   └── utils/
-├── public/              # 静态资源
-├── dev-server.js        # 本地 API 开发服务器入口
-├── vercel.json          # Vercel 全栈部署配置
-├── vite.config.js       # Vite 配置（含 API 代理）
-└── API.md               # 接口文档
+LW-01-01/                    # React 前端
+├── src/
+├── public/
+├── vite.config.js
+└── vercel.json              # 仅 SPA 路由
+
+AtelierShop-backend/AtelierShop/  # Spring Boot 后端
+├── src/main/java/com/su/ateliershop/
+├── src/main/resources/
+│   ├── application.yml
+│   ├── application-dev.yml  # 本地密钥（不入库）
+│   ├── mapper/
+│   └── sql/
+└── pom.xml
 ```
 
 ## 环境要求
 
-- **Node.js** ≥ 18
-- **npm**
+- **Node.js** ≥ 18（前端）
+- **Java** 17 + **Maven** 3.9+（后端）
+- **MySQL** 8.0+
 
-## 开发环境启动
-
-需要同时启动两个进程：
-
-### 终端 1：启动 API 后端
+## 数据库初始化
 
 ```bash
-npm run dev:api
+mysql -u root -p < F:\AtelierShop-backend\AtelierShop\src\main\resources\sql\schema.sql
+mysql -u root -p < F:\AtelierShop-backend\AtelierShop\src\main\resources\sql\seed.sql
 ```
 
-后端运行在 `http://localhost:3001`。
+## 后端配置
+
+1. 复制 `application-dev.yml.example` 为 `application-dev.yml`
+2. 填写 MySQL 用户名、密码
+3. 填写阿里云 OSS 密钥（或使用环境变量 `ALIOSS_*`）
+
+## 本地开发
+
+### 终端 1：启动 Spring Boot 后端
+
+```bash
+cd F:\AtelierShop-backend\AtelierShop
+mvn spring-boot:run
+```
+
+后端地址：`http://localhost:8080/api`
 
 ### 终端 2：启动前端
 
 ```bash
+cd C:\Users\35338\Desktop\LW-01-01
+npm install
 npm run dev
 ```
 
-前端运行在 `http://localhost:5173`，Vite 自动将 `/api` 请求代理到后端。
+前端地址：`http://localhost:5173`，Vite 将 `/api` 代理到 `http://localhost:8080`。
 
----
+## 生产部署
 
-## 生产环境部署（Vercel 一键部署）
+| 组件 | 推荐方式 |
+|------|----------|
+| 前端 | Vercel（`npm run build` → `dist/`） |
+| 后端 | 云服务器 / Docker 运行 Spring Boot |
+| 数据库 | MySQL 云实例 |
 
-本项目前后端都部署到 Vercel，一键完成。
-
-### 部署步骤
-
-#### 方式一：Vercel CLI
-
-```bash
-# 安装 Vercel CLI
-npm i -g vercel
-
-# 登录
-vercel login
-
-# 部署
-vercel --prod
-```
-
-#### 方式二：GitHub 自动部署
-
-1. 将代码推到 GitHub 仓库
-2. 在 [vercel.com](https://vercel.com) 点击 **Add New Project**
-3. 导入该 GitHub 仓库
-4. 保持默认配置，点击 **Deploy**
-5. Vercel 自动识别：
-   - 前端：`npm run build` 构建，输出 `dist/`
-   - 后端：`api/index.js` 作为 Serverless Function
-
-### 部署后验证
+前端 `.env.production` 中设置：
 
 ```
-https://你的项目名.vercel.app/api/health     # 后端健康检查
-https://你的项目名.vercel.app/                 # 前端页面
+VITE_API_BASE=https://你的后端域名/api
 ```
 
----
+## 演示账号
 
-## 数据说明
+- 前台：`demo / 123456`
+- 管理员：`admin / admin123`
+- 运营：`operator / op123456`
 
-后端使用 **内存数据库**，种子数据在 `api/seed.js` 中定义。
+## 验证
 
-- Vercel Serverless 环境下，每次冷启动时数据重置为种子数据
-- 开发环境下，重启 `dev:api` 进程后数据重置
-
----
-
-## 常见问题
-
-**Q: 前端页面显示空白/加载中？**
-> 确保 API 服务已启动。开发环境运行 `npm run dev:api`，生产环境检查 Vercel 部署日志。
-
-**Q: 端口被占用？**
-> ```bash
-> # 修改 API 端口
-> $env:PORT=3002; npm run dev:api
-> # 同时修改 vite.config.js 中的 proxy target
-> ```
-
-**Q: 数据想重置？**
-> 重启 API 服务即可（开发环境重启 `dev:api` 进程，生产环境重新部署）。
+- `GET http://localhost:8080/api/health`
+- `GET http://localhost:8080/api/goods`
+- 管理端上传图片 → OSS 返回 URL
