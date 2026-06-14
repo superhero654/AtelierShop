@@ -1,10 +1,10 @@
 /**
  * API 请求工具
  * - 开发环境：通过 Vite proxy 转发到 Spring Boot 后端 (localhost:8080)
- * - 生产环境：通过 VITE_API_BASE 环境变量指向线上后端
+ * - 生产环境：通过 VITE_API_BASE_URL 环境变量指向线上后端
  */
 
-const BASE = import.meta.env.VITE_API_BASE || '/api';
+const BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || '/api';
 
 function buildAuthHeaders(includeJson = true) {
   const headers = {};
