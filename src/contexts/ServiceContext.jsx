@@ -1,9 +1,9 @@
-import { createContext, useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import goodService from '../services/goodService';
 import orderService from '../services/orderService';
 import categoryService from '../services/categoryService';
 import authService from '../services/authService';
-import { CATALOG_POLL_INTERVAL_MS, onCatalogChange } from '../utils/dataSync';
+import { CATALOG_POLL_INTERVAL_MS, ORDER_POLL_INTERVAL_MS, onCatalogChange } from '../utils/dataSync';
 
 const ServiceContext = createContext();
 
@@ -13,6 +13,7 @@ function ServiceProvider({ children }) {
     categories: true,
     orders: true,
   });
+  const [ordersTick, setOrdersTick] = useState(0);
 
   const refreshCatalog = useCallback(async (scope = 'all') => {
     const tasks = [];
@@ -38,10 +39,27 @@ function ServiceProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    return orderService.subscribe(() => {
+      setOrdersTick(orderService.getVersion());
+    });
+  }, []);
+
+  useEffect(() => {
     return onCatalogChange((scope) => {
       refreshCatalog(scope);
     });
   }, [refreshCatalog]);
+
+  useEffect(() => {
+    const pollOrders = () => {
+      if (document.visibilityState === 'visible') {
+        orderService.fetchAll();
+      }
+    };
+
+    const orderIntervalId = setInterval(pollOrders, ORDER_POLL_INTERVAL_MS);
+    return () => clearInterval(orderIntervalId);
+  }, []);
 
   useEffect(() => {
     const poll = () => {
@@ -66,14 +84,15 @@ function ServiceProvider({ children }) {
     };
   }, [refreshCatalog]);
 
-  const value = {
+  const value = useMemo(() => ({
     good: goodService,
     order: orderService,
     category: categoryService,
     auth: authService,
     loading,
+    ordersTick,
     refreshCatalog,
-  };
+  }), [loading, ordersTick, refreshCatalog]);
 
   return (
     <ServiceContext.Provider value={value}>

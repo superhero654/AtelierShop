@@ -2,7 +2,7 @@ import { useContext, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ServiceContext } from '../contexts/ServiceContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useOrderById } from '../hooks/useCatalog';
+import { useSyncedOrderById } from '../hooks/useCatalog';
 import { formatPrice, formatDate } from '../utils/format';
 import { ORDER_STATUS } from '../mock/seedData';
 import styles from './OrderPage.module.css';
@@ -15,7 +15,7 @@ export default function OrderDetailPage() {
   const navigate = useNavigate();
 
   const parsedOrderId = parseInt(orderId, 10);
-  const order = useOrderById(parsedOrderId);
+  const order = useSyncedOrderById(parsedOrderId);
 
   const items = useMemo(
     () => (order?.items || []).map((item) => ({ ...item, good: services.good.getGoodById(item.goodId) })),

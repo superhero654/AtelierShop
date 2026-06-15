@@ -1,7 +1,8 @@
-import { useMemo, useSyncExternalStore } from 'react';
+import { useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import goodService from '../services/goodService';
 import categoryService from '../services/categoryService';
 import orderService from '../services/orderService';
+import { ServiceContext } from '../contexts/ServiceContext';
 
 function useGoodVersion() {
   return useSyncExternalStore(
@@ -55,18 +56,52 @@ function useOrderVersion() {
 
 export function useOrderById(id) {
   const version = useOrderVersion();
-  return useMemo(() => orderService.getOrderById(id), [version, id]);
+  const { ordersTick } = useContext(ServiceContext) ?? {};
+  void version;
+  void ordersTick;
+  return orderService.getOrderById(id);
 }
 
 export function useOrdersByUserId(userId) {
   const version = useOrderVersion();
-  return useMemo(
-    () => (userId ? orderService.getOrdersByUserId(userId) : []),
-    [version, userId],
-  );
+  const { ordersTick } = useContext(ServiceContext) ?? {};
+  void version;
+  void ordersTick;
+  return userId ? orderService.getOrdersByUserId(userId) : [];
 }
 
 export function useAllOrders() {
   const version = useOrderVersion();
-  return useMemo(() => orderService.getAllOrders(), [version]);
+  const { ordersTick } = useContext(ServiceContext) ?? {};
+  void version;
+  void ordersTick;
+  return orderService.getAllOrders();
+}
+
+/** 用户端订单列表：本地 state + ordersTick 同步，确保跨标签/轮询后立即重渲染 */
+export function useSyncedUserOrders(userId) {
+  const version = useOrderVersion();
+  const { ordersTick } = useContext(ServiceContext) ?? {};
+  const [orders, setOrders] = useState(() =>
+    (userId ? orderService.getOrdersByUserId(userId) : []),
+  );
+
+  useEffect(() => {
+    setOrders(userId ? [...orderService.getOrdersByUserId(userId)] : []);
+  }, [userId, ordersTick, version]);
+
+  return orders;
+}
+
+/** 用户端订单详情：本地 state + ordersTick 同步 */
+export function useSyncedOrderById(id) {
+  const version = useOrderVersion();
+  const { ordersTick } = useContext(ServiceContext) ?? {};
+  const [order, setOrder] = useState(() => orderService.getOrderById(id));
+
+  useEffect(() => {
+    setOrder(orderService.getOrderById(id));
+  }, [id, ordersTick, version]);
+
+  return order;
 }

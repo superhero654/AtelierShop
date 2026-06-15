@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { message } from 'antd';
 import { useAuth } from '../contexts/AuthContext';
-import { useOrdersByUserId } from '../hooks/useCatalog';
+import { ServiceContext } from '../contexts/ServiceContext';
+import { useSyncedUserOrders } from '../hooks/useCatalog';
 import { formatPrice, formatDate } from '../utils/format';
 import { ORDER_STATUS } from '../mock/seedData';
 import styles from './UserPage.module.css';
 
 export default function UserPage() {
   const { user, isLoggedIn, logoutUser, updateUserProfile } = useAuth();
+  const { refreshCatalog } = useContext(ServiceContext);
   const navigate = useNavigate();
   const [tab, setTab] = useState('profile');
   const [profile, setProfile] = useState({
@@ -16,6 +19,8 @@ export default function UserPage() {
     address: user?.address || '',
   });
   const [saved, setSaved] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [ordersRefreshed, setOrdersRefreshed] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -27,7 +32,7 @@ export default function UserPage() {
     }
   }, [user]);
 
-  const orders = useOrdersByUserId(user?.id);
+  const orders = useSyncedUserOrders(user?.id);
 
   if (!isLoggedIn) {
     return (
@@ -53,6 +58,19 @@ export default function UserPage() {
   const handleLogout = () => {
     logoutUser();
     navigate('/');
+  };
+
+  const handleRefreshOrders = async () => {
+    setRefreshing(true);
+    try {
+      await refreshCatalog('orders');
+      setOrdersRefreshed(true);
+      setTimeout(() => setOrdersRefreshed(false), 2000);
+    } catch {
+      message.error('刷新失败，请稍后重试');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -138,9 +156,25 @@ export default function UserPage() {
 
           {tab === 'orders' && (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
                 <h2 className="section-title" style={{ marginBottom: 0 }}>我的订单</h2>
-                <Link to="/orders">查看全部 →</Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    disabled={refreshing}
+                    onClick={handleRefreshOrders}
+                    style={{ padding: '6px 14px', fontSize: 13 }}
+                  >
+                    {refreshing ? '刷新中…' : '刷新状态'}
+                  </button>
+                  {ordersRefreshed && (
+                    <span role="status" aria-live="polite" style={{ color: 'var(--color-success)', fontSize: 13 }}>
+                      已更新
+                    </span>
+                  )}
+                  <Link to="/orders">查看全部 →</Link>
+                </div>
               </div>
               {orders.length === 0 ? (
                 <div className="empty-state" style={{ padding: '32px 0' }}>
@@ -148,7 +182,7 @@ export default function UserPage() {
                 </div>
               ) : (
                 orders.slice(0, 5).map((order) => (
-                  <div key={order.id} className={styles.orderItem}>
+                  <div key={`${order.id}-${order.status}`} className={styles.orderItem}>
                     <div>
                       <div className={styles.orderNo}>{order.orderNo}</div>
                       <div className={styles.orderMeta}>

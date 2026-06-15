@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { ServiceContext } from '../contexts/ServiceContext';
-import { useOrderById } from '../hooks/useCatalog';
+import { useSyncedOrderById } from '../hooks/useCatalog';
 import { formatPrice, formatDate } from '../utils/format';
 import ProtectedRoute from '../components/ProtectedRoute';
 import styles from './PayPage.module.css';
@@ -14,7 +14,7 @@ function PayContent() {
   const navigate = useNavigate();
   const parsedOrderId = parseInt(orderId, 10);
 
-  const order = useOrderById(parsedOrderId);
+  const order = useSyncedOrderById(parsedOrderId);
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const [status, setStatus] = useState('pending');
 

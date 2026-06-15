@@ -6,6 +6,10 @@
 
 const BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || '/api';
 
+function isAdminRoute() {
+  return typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+}
+
 function buildAuthHeaders(includeJson = true) {
   const headers = {};
   if (includeJson) {
@@ -15,10 +19,13 @@ function buildAuthHeaders(includeJson = true) {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (user?.id) headers['X-User-Id'] = user.id;
   } catch {}
-  try {
-    const admin = JSON.parse(localStorage.getItem('currentAdmin'));
-    if (admin?.id) headers['X-Admin-Id'] = admin.id;
-  } catch {}
+  // 仅管理端路由携带管理员身份，避免用户端标签误用管理员权限拉取订单
+  if (isAdminRoute()) {
+    try {
+      const admin = JSON.parse(localStorage.getItem('currentAdmin'));
+      if (admin?.id) headers['X-Admin-Id'] = admin.id;
+    } catch {}
+  }
   return headers;
 }
 

@@ -5,6 +5,20 @@ import { api } from '../utils/api';
 import { optimisticMutation } from '../utils/optimisticMutation';
 import { broadcastCatalogChange } from '../utils/dataSync';
 
+function sameId(a, b) {
+  return Number(a) === Number(b);
+}
+
+function normalizeOrder(order) {
+  if (!order) return order;
+  return {
+    ...order,
+    id: Number(order.id),
+    userId: order.userId != null ? Number(order.userId) : order.userId,
+    status: Number(order.status),
+  };
+}
+
 class OrderService {
   list = [];
 
@@ -30,17 +44,18 @@ class OrderService {
   }
 
   async fetchAll() {
-    this.list = await api.get('/orders');
+    const fresh = await api.get('/orders');
+    this.list = Array.isArray(fresh) ? fresh.map(normalizeOrder) : [];
     this._notify(false);
   }
 
   getOrderById(id) {
-    return this.list.find((o) => o.id === id) || null;
+    return this.list.find((o) => sameId(o.id, id)) || null;
   }
 
   getOrdersByUserId(userId) {
     return this.list
-      .filter((o) => o.userId === userId)
+      .filter((o) => Number(o.userId) === Number(userId))
       .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
   }
 
@@ -49,22 +64,27 @@ class OrderService {
   }
 
   _replaceInList(order) {
-    const idx = this.list.findIndex((o) => o.id === order.id);
+    const normalized = normalizeOrder(order);
+    const idx = this.list.findIndex((o) => sameId(o.id, normalized.id));
     if (idx >= 0) {
-      this.list[idx] = order;
+      this.list[idx] = normalized;
     }
   }
 
+  _mapOrderInList(orderId, updated) {
+    this.list = this.list.map((o) => (sameId(o.id, orderId) ? normalizeOrder(updated) : o));
+  }
+
   async createOrder(data) {
-    const order = await api.post('/orders', data);
+    const order = normalizeOrder(await api.post('/orders', data));
     this.list.push(order);
     this._notify(true);
     return order;
   }
 
   async payOrder(orderId) {
-    const updated = await api.patch(`/orders/${orderId}/pay`);
-    this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    const updated = normalizeOrder(await api.patch(`/orders/${orderId}/pay`));
+    this._mapOrderInList(orderId, updated);
     this._notify(true);
     return updated;
   }
@@ -74,8 +94,8 @@ class OrderService {
   }
 
   async cancelOrder(orderId) {
-    const updated = await api.patch(`/orders/${orderId}/cancel`);
-    this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    const updated = normalizeOrder(await api.patch(`/orders/${orderId}/cancel`));
+    this._mapOrderInList(orderId, updated);
     this._notify(true);
     return updated;
   }
@@ -89,8 +109,8 @@ class OrderService {
   }
 
   async shipOrder(orderId) {
-    const updated = await api.patch(`/orders/${orderId}/ship`);
-    this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    const updated = normalizeOrder(await api.patch(`/orders/${orderId}/ship`));
+    this._mapOrderInList(orderId, updated);
     this._notify(true);
     return updated;
   }
@@ -100,8 +120,8 @@ class OrderService {
   }
 
   async completeOrder(orderId) {
-    const updated = await api.patch(`/orders/${orderId}/complete`);
-    this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    const updated = normalizeOrder(await api.patch(`/orders/${orderId}/complete`));
+    this._mapOrderInList(orderId, updated);
     this._notify(true);
     return updated;
   }
@@ -111,8 +131,8 @@ class OrderService {
   }
 
   async updateOrderStatus(orderId, status) {
-    const updated = await api.patch(`/orders/${orderId}/status`, { status });
-    this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    const updated = normalizeOrder(await api.patch(`/orders/${orderId}/status`, { status }));
+    this._mapOrderInList(orderId, updated);
     this._notify(true);
     return updated;
   }
@@ -130,9 +150,9 @@ class OrderService {
     const previous = this.getOrderById(orderId);
     if (!previous) return Promise.reject(new Error('订单不存在'));
 
-    const optimistic = { ...previous, status: nextStatus };
+    const optimistic = normalizeOrder({ ...previous, status: nextStatus });
     this._replaceInList(optimistic);
-    this._notify(true);
+    this._notify(false);
     onSync?.();
 
     return optimisticMutation({
@@ -146,7 +166,7 @@ class OrderService {
       request,
       onSuccess: (updated) => {
         this._replaceInList(updated);
-        this._notify(false);
+        this._notify(true);
         onSync?.();
       },
     });

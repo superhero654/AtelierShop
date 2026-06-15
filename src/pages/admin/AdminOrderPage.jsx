@@ -1,12 +1,12 @@
 // src/pages/admin/AdminOrderPage.jsx
-import { useState, useContext, useCallback, useMemo } from 'react';
+import { useState, useContext, useCallback, useMemo, useEffect } from 'react';
 import {
   Table, Button, Space, Tag, message, Tabs, Input, DatePicker,
   Row, Col, Drawer, Descriptions, Divider, Empty,
 } from 'antd';
-import { EyeOutlined } from '@ant-design/icons';
+import { EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import { ServiceContext } from '../../contexts/ServiceContext';
-import { useAllOrders } from '../../hooks/useCatalog';
+import goodService from '../../services/goodService';
 import { formatDate } from '../../utils/format';
 import { ORDER_STATUS } from '../../mock/seedData';
 import ProtectedRoute from '../../components/ProtectedRoute';
@@ -25,12 +25,40 @@ const STATUS_TABS = [
 
 function AdminOrderContent() {
   const services = useContext(ServiceContext);
-  const orderList = useAllOrders();
-  const loading = services.loading?.orders;
+  const [orderList, setOrderList] = useState(() => services.order.getAllOrders());
   const [activeTab, setActiveTab] = useState('');
   const [searchText, setSearchText] = useState('');
   const [dateRange, setDateRange] = useState(null);
   const [pendingOrderIds, setPendingOrderIds] = useState(() => new Set());
+  const [refreshing, setRefreshing] = useState(false);
+
+  const syncList = useCallback(() => {
+    setOrderList([...services.order.getAllOrders()]);
+  }, [services.order]);
+
+  const orderCallbacks = useCallback(() => ({
+    onSync: () => syncList(),
+    onRollback: () => {
+      syncList();
+      message.error('操作失败，已回滚');
+    },
+  }), [syncList]);
+
+  useEffect(() => {
+    if (!services.loading?.orders) syncList();
+  }, [services.loading?.orders, services.ordersTick, syncList]);
+
+  const refreshOrders = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await services.refreshCatalog('orders');
+      syncList();
+    } catch {
+      message.error('刷新失败，请稍后重试');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [services, syncList]);
 
   // Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -40,10 +68,6 @@ function AdminOrderContent() {
     () => (selectedOrderId != null ? services.order.getOrderById(selectedOrderId) : null),
     [selectedOrderId, orderList, services.order],
   );
-
-  const orderCallbacks = useCallback(() => ({
-    onRollback: () => message.error('操作失败，已回滚'),
-  }), []);
 
   const markOrderPending = (orderId) => {
     setPendingOrderIds((prev) => new Set(prev).add(orderId));
@@ -60,16 +84,21 @@ function AdminOrderContent() {
   const runOrderAction = (orderId, action, successMsg) => {
     if (pendingOrderIds.has(orderId)) return;
     markOrderPending(orderId);
-    message.success(successMsg);
 
     action(orderCallbacks())
-      .catch(() => {})
+      .then(() => message.success(successMsg))
+      .catch((err) => message.error(err?.message || '操作失败，请重试'))
       .finally(() => clearOrderPending(orderId));
   };
 
   const getActionButtons = (status, orderId) => {
+    const s = Number(status);
     const handlePay = () => {
-      runOrderAction(orderId, (cb) => services.order.payOrderOptimistic(orderId, cb), '已标记为已付款');
+      runOrderAction(
+        orderId,
+        (cb) => services.order.updateOrderStatusOptimistic(orderId, 1, cb),
+        '已标记为已付款',
+      );
     };
 
     const handleCancel = () => {
@@ -77,30 +106,38 @@ function AdminOrderContent() {
     };
 
     const handleShip = () => {
-      runOrderAction(orderId, (cb) => services.order.shipOrderOptimistic(orderId, cb), '已标记为已发货');
+      runOrderAction(
+        orderId,
+        (cb) => services.order.updateOrderStatusOptimistic(orderId, 2, cb),
+        '已标记为已发货',
+      );
     };
 
     const handleComplete = () => {
-      runOrderAction(orderId, (cb) => services.order.completeOrderOptimistic(orderId, cb), '订单已完成');
+      runOrderAction(
+        orderId,
+        (cb) => services.order.updateOrderStatusOptimistic(orderId, 3, cb),
+        '订单已完成',
+      );
     };
 
     const disabled = pendingOrderIds.has(orderId);
 
     return (
       <Space size={4}>
-        {status === 0 && (
+        {s === 0 && (
           <>
             <Button type="link" size="small" disabled={disabled} onClick={handlePay}>标记已付款</Button>
             <Button type="link" size="small" danger disabled={disabled} onClick={handleCancel}>取消订单</Button>
           </>
         )}
-        {status === 1 && (
+        {s === 1 && (
           <>
             <Button type="link" size="small" disabled={disabled} onClick={handleShip}>标记已发货</Button>
             <Button type="link" size="small" danger disabled={disabled} onClick={handleCancel}>取消订单</Button>
           </>
         )}
-        {status === 2 && (
+        {s === 2 && (
           <Button type="link" size="small" disabled={disabled} onClick={handleComplete}>确认完成</Button>
         )}
       </Space>
@@ -259,13 +296,18 @@ function AdminOrderContent() {
         <Col>
           <Button onClick={handleReset}>重置</Button>
         </Col>
+        <Col>
+          <Button icon={<ReloadOutlined />} loading={refreshing} onClick={refreshOrders}>
+            刷新
+          </Button>
+        </Col>
       </Row>
 
       <Table
-        rowKey="id"
+        rowKey={(record) => `${record.id}-${record.status}`}
         columns={columns}
         dataSource={displayList}
-        loading={loading}
+        loading={services.loading?.orders || refreshing}
         scroll={{ x: 1000 }}
         pagination={{
           pageSize: 10,
@@ -330,7 +372,7 @@ function AdminOrderContent() {
                     title: '商品名称',
                     dataIndex: 'goodId',
                     render: (id) => {
-                      const good = services.good.getGoodById(id);
+                      const good = goodService.getGoodById(id);
                       return good?.name || `商品#${id}`;
                     },
                   },
@@ -360,7 +402,7 @@ function AdminOrderContent() {
             </div>
 
             {/* 操作区 */}
-            {(selectedOrder.status === 0 || selectedOrder.status === 1 || selectedOrder.status === 2) && (
+            {(Number(selectedOrder.status) === 0 || Number(selectedOrder.status) === 1 || Number(selectedOrder.status) === 2) && (
               <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
                 {getActionButtons(selectedOrder.status, selectedOrder.id)}
               </div>
