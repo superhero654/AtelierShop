@@ -1,14 +1,37 @@
 /**
- * 订单服务 — 缓存式读写 + 乐观更新
+ * 订单服务 — 缓存式读写 + 乐观更新 + 订阅通知
  */
 import { api } from '../utils/api';
 import { optimisticMutation } from '../utils/optimisticMutation';
+import { broadcastCatalogChange } from '../utils/dataSync';
 
 class OrderService {
   list = [];
 
+  _version = 0;
+
+  _subscribers = new Set();
+
+  subscribe(listener) {
+    this._subscribers.add(listener);
+    return () => this._subscribers.delete(listener);
+  }
+
+  getVersion() {
+    return this._version;
+  }
+
+  _notify(broadcast = false) {
+    this._version += 1;
+    this._subscribers.forEach((fn) => fn());
+    if (broadcast) {
+      broadcastCatalogChange('orders');
+    }
+  }
+
   async fetchAll() {
     this.list = await api.get('/orders');
+    this._notify(false);
   }
 
   getOrderById(id) {
@@ -35,12 +58,14 @@ class OrderService {
   async createOrder(data) {
     const order = await api.post('/orders', data);
     this.list.push(order);
+    this._notify(true);
     return order;
   }
 
   async payOrder(orderId) {
     const updated = await api.patch(`/orders/${orderId}/pay`);
     this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    this._notify(true);
     return updated;
   }
 
@@ -51,6 +76,7 @@ class OrderService {
   async cancelOrder(orderId) {
     const updated = await api.patch(`/orders/${orderId}/cancel`);
     this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    this._notify(true);
     return updated;
   }
 
@@ -65,6 +91,7 @@ class OrderService {
   async shipOrder(orderId) {
     const updated = await api.patch(`/orders/${orderId}/ship`);
     this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    this._notify(true);
     return updated;
   }
 
@@ -75,6 +102,7 @@ class OrderService {
   async completeOrder(orderId) {
     const updated = await api.patch(`/orders/${orderId}/complete`);
     this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    this._notify(true);
     return updated;
   }
 
@@ -85,6 +113,7 @@ class OrderService {
   async updateOrderStatus(orderId, status) {
     const updated = await api.patch(`/orders/${orderId}/status`, { status });
     this.list = this.list.map((o) => (o.id === orderId ? updated : o));
+    this._notify(true);
     return updated;
   }
 
@@ -103,18 +132,21 @@ class OrderService {
 
     const optimistic = { ...previous, status: nextStatus };
     this._replaceInList(optimistic);
+    this._notify(true);
     onSync?.();
 
     return optimisticMutation({
       apply: () => {},
       rollback: () => {
         this._replaceInList(previous);
+        this._notify(true);
         onSync?.();
         onRollback?.();
       },
       request,
       onSuccess: (updated) => {
         this._replaceInList(updated);
+        this._notify(false);
         onSync?.();
       },
     });

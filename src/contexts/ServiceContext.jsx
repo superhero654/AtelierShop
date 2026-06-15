@@ -22,6 +22,9 @@ function ServiceProvider({ children }) {
     if (scope === 'categories' || scope === 'all') {
       tasks.push(categoryService.fetchAll());
     }
+    if (scope === 'orders' || scope === 'all') {
+      tasks.push(orderService.fetchAll());
+    }
     await Promise.allSettled(tasks);
   }, []);
 

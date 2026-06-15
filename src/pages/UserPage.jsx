@@ -1,14 +1,13 @@
-import { useState, useContext, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ServiceContext } from '../contexts/ServiceContext';
+import { useOrdersByUserId } from '../hooks/useCatalog';
 import { formatPrice, formatDate } from '../utils/format';
 import { ORDER_STATUS } from '../mock/seedData';
 import styles from './UserPage.module.css';
 
 export default function UserPage() {
   const { user, isLoggedIn, logoutUser, updateUserProfile } = useAuth();
-  const services = useContext(ServiceContext);
   const navigate = useNavigate();
   const [tab, setTab] = useState('profile');
   const [profile, setProfile] = useState({
@@ -28,10 +27,7 @@ export default function UserPage() {
     }
   }, [user]);
 
-  const orders = useMemo(
-    () => (user ? services.order.getOrdersByUserId(user.id) : []),
-    [services.order, user]
-  );
+  const orders = useOrdersByUserId(user?.id);
 
   if (!isLoggedIn) {
     return (

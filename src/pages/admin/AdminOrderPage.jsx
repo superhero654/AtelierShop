@@ -1,11 +1,12 @@
 // src/pages/admin/AdminOrderPage.jsx
-import { useState, useContext, useCallback, useMemo, useEffect } from 'react';
+import { useState, useContext, useCallback, useMemo } from 'react';
 import {
   Table, Button, Space, Tag, message, Tabs, Input, DatePicker,
   Row, Col, Drawer, Descriptions, Divider, Empty,
 } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import { ServiceContext } from '../../contexts/ServiceContext';
+import { useAllOrders } from '../../hooks/useCatalog';
 import { formatDate } from '../../utils/format';
 import { ORDER_STATUS } from '../../mock/seedData';
 import ProtectedRoute from '../../components/ProtectedRoute';
@@ -24,8 +25,8 @@ const STATUS_TABS = [
 
 function AdminOrderContent() {
   const services = useContext(ServiceContext);
-  const [orderList, setOrderList] = useState(() => services.order.getAllOrders());
-  const [loading] = useState(false);
+  const orderList = useAllOrders();
+  const loading = services.loading?.orders;
   const [activeTab, setActiveTab] = useState('');
   const [searchText, setSearchText] = useState('');
   const [dateRange, setDateRange] = useState(null);
@@ -33,28 +34,16 @@ function AdminOrderContent() {
 
   // Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
 
-  const refresh = useCallback(() => {
-    setOrderList([...services.order.getAllOrders()]);
-  }, [services.order]);
+  const selectedOrder = useMemo(
+    () => (selectedOrderId != null ? services.order.getOrderById(selectedOrderId) : null),
+    [selectedOrderId, orderList, services.order],
+  );
 
-  useEffect(() => {
-    if (!services.loading?.orders) refresh();
-  }, [services.loading?.orders, refresh]);
-
-  const syncOrderView = useCallback((orderId) => {
-    refresh();
-    const updated = services.order.getOrderById(orderId);
-    if (updated) {
-      setSelectedOrder((prev) => (prev?.id === orderId ? updated : prev));
-    }
-  }, [refresh, services.order]);
-
-  const orderCallbacks = useCallback((orderId) => ({
-    onSync: () => syncOrderView(orderId),
-    onRollback: () => syncOrderView(orderId),
-  }), [syncOrderView]);
+  const orderCallbacks = useCallback(() => ({
+    onRollback: () => message.error('操作失败，已回滚'),
+  }), []);
 
   const markOrderPending = (orderId) => {
     setPendingOrderIds((prev) => new Set(prev).add(orderId));
@@ -72,10 +61,9 @@ function AdminOrderContent() {
     if (pendingOrderIds.has(orderId)) return;
     markOrderPending(orderId);
     message.success(successMsg);
-    syncOrderView(orderId);
 
-    action(orderCallbacks(orderId))
-      .catch(() => message.error('操作失败，已回滚'))
+    action(orderCallbacks())
+      .catch(() => {})
       .finally(() => clearOrderPending(orderId));
   };
 
@@ -168,7 +156,7 @@ function AdminOrderContent() {
   };
 
   const openDetail = (record) => {
-    setSelectedOrder(record);
+    setSelectedOrderId(record.id);
     setDrawerOpen(true);
   };
 
@@ -211,6 +199,8 @@ function AdminOrderContent() {
     },
     {
       title: '操作',
+      key: 'actions',
+      fixed: 'right',
       width: 280,
       render: (_, record) => (
         <Space size={4}>
@@ -276,6 +266,7 @@ function AdminOrderContent() {
         columns={columns}
         dataSource={displayList}
         loading={loading}
+        scroll={{ x: 1000 }}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
@@ -289,7 +280,7 @@ function AdminOrderContent() {
       <Drawer
         title="订单详情"
         open={drawerOpen}
-        onClose={() => { setDrawerOpen(false); setSelectedOrder(null); }}
+        onClose={() => { setDrawerOpen(false); setSelectedOrderId(null); }}
         width={520}
         destroyOnClose
       >

@@ -133,11 +133,14 @@ function AdminCategoryContent() {
     },
     {
       title: '操作',
-      width: 160,
+      key: 'actions',
+      fixed: 'right',
+      width: 150,
       render: (_, record) => (
-        <Space>
+        <Space size={4}>
           <Button
             type="link"
+            size="small"
             icon={<EditOutlined aria-hidden="true" />}
             onClick={() => openEdit(record)}
             aria-label={`编辑 ${record.name}`}
@@ -146,6 +149,7 @@ function AdminCategoryContent() {
           </Button>
           <Button
             type="link"
+            size="small"
             danger
             icon={<DeleteOutlined aria-hidden="true" />}
             loading={loadingId === record.id}
@@ -173,6 +177,7 @@ function AdminCategoryContent() {
         columns={columns}
         dataSource={categories}
         loading={loading}
+        scroll={{ x: 800 }}
         pagination={{ pageSize: 10, showTotal: (t) => `共 ${t} 条` }}
         locale={{ emptyText: '暂无分类数据' }}
       />

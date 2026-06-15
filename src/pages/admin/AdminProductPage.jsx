@@ -233,6 +233,7 @@ function AdminProductContent() {
     {
       title: '名称',
       dataIndex: 'name',
+      width: 140,
       ellipsis: true,
       render: (text) => {
         if (!text) return '—';
@@ -280,14 +281,17 @@ function AdminProductContent() {
     },
     {
       title: '操作',
-      width: 160,
+      key: 'actions',
+      fixed: 'right',
+      width: 150,
       render: (_, record) => (
-        <Space>
-          <Button type="link" icon={<EditOutlined aria-hidden="true" />} onClick={() => openEdit(record)} aria-label={`编辑 ${record.name}`}>
+        <Space size={4}>
+          <Button type="link" size="small" icon={<EditOutlined aria-hidden="true" />} onClick={() => openEdit(record)} aria-label={`编辑 ${record.name}`}>
             编辑
           </Button>
           <Button
             type="link"
+            size="small"
             danger
             icon={<DeleteOutlined aria-hidden="true" />}
             loading={loadingId === record.id}
@@ -375,6 +379,7 @@ function AdminProductContent() {
         columns={columns}
         dataSource={displayList}
         loading={loading}
+        scroll={{ x: 1100 }}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,

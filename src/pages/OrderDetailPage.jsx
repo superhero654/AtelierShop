@@ -1,7 +1,8 @@
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ServiceContext } from '../contexts/ServiceContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrderById } from '../hooks/useCatalog';
 import { formatPrice, formatDate } from '../utils/format';
 import { ORDER_STATUS } from '../mock/seedData';
 import styles from './OrderPage.module.css';
@@ -14,7 +15,12 @@ export default function OrderDetailPage() {
   const navigate = useNavigate();
 
   const parsedOrderId = parseInt(orderId, 10);
-  const order = services.order.getOrderById(parsedOrderId);
+  const order = useOrderById(parsedOrderId);
+
+  const items = useMemo(
+    () => (order?.items || []).map((item) => ({ ...item, good: services.good.getGoodById(item.goodId) })),
+    [order, services.good],
+  );
 
   if (!order) {
     return (
@@ -26,11 +32,6 @@ export default function OrderDetailPage() {
       </div>
     );
   }
-
-  const items = (order.items || []).map((item) => {
-    const good = services.good.getGoodById(item.goodId);
-    return { ...item, good };
-  });
 
   return (
     <div className="container">

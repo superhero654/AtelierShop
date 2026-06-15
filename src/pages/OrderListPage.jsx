@@ -1,20 +1,14 @@
-import { useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ServiceContext } from '../contexts/ServiceContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrdersByUserId } from '../hooks/useCatalog';
 import { formatPrice, formatDate } from '../utils/format';
 import { ORDER_STATUS } from '../mock/seedData';
 import ProtectedRoute from '../components/ProtectedRoute';
 import styles from './UserPage.module.css';
 
 function OrderListContent() {
-  const services = useContext(ServiceContext);
   const { user } = useAuth();
-
-  const orders = useMemo(
-    () => services.order.getOrdersByUserId(user.id),
-    [services.order, user.id]
-  );
+  const orders = useOrdersByUserId(user?.id);
 
   if (orders.length === 0) {
     return (

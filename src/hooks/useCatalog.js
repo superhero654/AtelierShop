@@ -1,6 +1,7 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import goodService from '../services/goodService';
 import categoryService from '../services/categoryService';
+import orderService from '../services/orderService';
 
 function useGoodVersion() {
   return useSyncExternalStore(
@@ -42,4 +43,30 @@ export function useCategoryById(id) {
     () => (id != null ? categoryService.getCategoryById(id) : null),
     [version, id],
   );
+}
+
+function useOrderVersion() {
+  return useSyncExternalStore(
+    (cb) => orderService.subscribe(cb),
+    () => orderService.getVersion(),
+    () => orderService.getVersion(),
+  );
+}
+
+export function useOrderById(id) {
+  const version = useOrderVersion();
+  return useMemo(() => orderService.getOrderById(id), [version, id]);
+}
+
+export function useOrdersByUserId(userId) {
+  const version = useOrderVersion();
+  return useMemo(
+    () => (userId ? orderService.getOrdersByUserId(userId) : []),
+    [version, userId],
+  );
+}
+
+export function useAllOrders() {
+  const version = useOrderVersion();
+  return useMemo(() => orderService.getAllOrders(), [version]);
 }

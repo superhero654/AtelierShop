@@ -10,20 +10,20 @@ function getChannel() {
   return channel;
 }
 
-/** @param {'goods' | 'categories' | 'all'} scope */
+/** @param {'goods' | 'categories' | 'orders' | 'all'} scope */
 export function broadcastCatalogChange(scope) {
   const bc = getChannel();
   bc?.postMessage({ type: 'catalog-change', scope, at: Date.now() });
 }
 
-/** @param {(scope: 'goods' | 'categories' | 'all') => void} callback */
+/** @param {(scope: 'goods' | 'categories' | 'orders' | 'all') => void} callback */
 export function onCatalogChange(callback) {
   const bc = getChannel();
   if (!bc) return () => {};
 
   const handler = (event) => {
     const scope = event.data?.scope;
-    if (scope === 'goods' || scope === 'categories' || scope === 'all') {
+    if (scope === 'goods' || scope === 'categories' || scope === 'orders' || scope === 'all') {
       callback(scope);
     }
   };
