@@ -29,11 +29,11 @@ export default function HomePage() {
     const filters = { status: 'on' };
     if (keyword) filters.keyword = keyword;
     return services.good.getGoodList(filters);
-  }, [services.good, keyword]);
+  }, [services.good, keyword, services.loading?.goods]);
 
   const hotProducts = useMemo(
     () => services.good.getGoodList({ status: 'on', hot: true }),
-    [services.good]
+    [services.good, services.loading?.goods]
   );
 
   return (

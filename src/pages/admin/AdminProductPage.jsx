@@ -1,5 +1,5 @@
 // src/pages/admin/AdminProductPage.jsx
-import { useState, useContext, useCallback, useMemo } from 'react';
+import { useState, useContext, useCallback, useMemo, useEffect } from 'react';
 import {
   Table, Button, Modal, Form, Input, InputNumber, Select, Switch,
   Space, message, Tag, Image, Row, Col, Tooltip, Empty, Upload,
@@ -31,7 +31,20 @@ function AdminProductContent() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [imgError, setImgError] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingIds, setPendingIds] = useState(() => new Set());
   const [form] = Form.useForm();
+
+  const markPending = (id) => {
+    setPendingIds((prev) => new Set(prev).add(id));
+  };
+
+  const clearPending = (id) => {
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
 
   // 搜索筛选状态
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -43,6 +56,14 @@ function AdminProductContent() {
   const refresh = useCallback(() => {
     setProductList([...services.good.getGoodList()]);
   }, [services.good]);
+
+  const syncCallbacks = useCallback(() => ({
+    onSync: () => refresh(),
+  }), [refresh]);
+
+  useEffect(() => {
+    if (!services.loading?.goods) refresh();
+  }, [services.loading?.goods, refresh]);
 
   const categoryOptions = useMemo(() => [
     { value: '', label: '全部分类' },
@@ -94,18 +115,19 @@ function AdminProductContent() {
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {
-      try {
-        if (editing) {
-          services.good.updateGood({ ...editing, ...values });
-          message.success('商品已更新');
-        } else {
-          services.good.addGood(values);
-          message.success('商品已添加');
-        }
+      const callbacks = syncCallbacks();
+      if (editing) {
+        services.good.updateGoodOptimistic({ ...editing, ...values }, callbacks)
+          .then(() => message.success('商品已更新'))
+          .catch(() => message.error('操作失败，已回滚'));
         setModalOpen(false);
         refresh();
-      } catch (err) {
-        message.error('操作失败，请重试');
+      } else {
+        services.good.addGoodOptimistic(values, callbacks)
+          .then(() => message.success('商品已添加'))
+          .catch(() => message.error('操作失败，已回滚'));
+        setModalOpen(false);
+        refresh();
       }
     }).catch(() => {});
   };
@@ -117,45 +139,56 @@ function AdminProductContent() {
       title: '确认删除',
       content: `确定要删除商品「${record?.name || id}」吗？此操作不可撤销。`,
       onOk: () => {
-        try {
-          services.good.deleteGood(id);
-          message.success('商品已删除');
-          refresh();
-        } catch (err) {
-          message.error('删除失败');
-        } finally {
-          setLoadingId(null);
-        }
+        const callbacks = syncCallbacks();
+        message.success('商品已删除');
+        refresh();
+        services.good.deleteGoodOptimistic(id, callbacks)
+          .catch(() => message.error('删除失败，已回滚'))
+          .finally(() => setLoadingId(null));
       },
     });
   };
 
   const handleToggleStatus = (record) => {
-    try {
-      services.good.toggleStatus(record.id);
-      message.success(record.status === 'on' ? '已下架' : '已上架');
-      refresh();
-    } catch (err) {
-      message.error('操作失败');
-    }
+    if (pendingIds.has(record.id)) return;
+
+    const prevStatus = record.status;
+    markPending(record.id);
+    message.success(prevStatus === 'on' ? '已下架' : '已上架');
+    refresh();
+
+    services.good.toggleStatusOptimistic(record.id, syncCallbacks())
+      .catch(() => message.error('操作失败，已回滚'))
+      .finally(() => clearPending(record.id));
   };
 
   // 批量上架 / 下架
   const handleBatchStatus = (newStatus) => {
-    try {
-      selectedRowKeys.forEach((id) => {
-        const record = productList.find((item) => item.id === id);
-        if (record && record.status !== newStatus) {
-          services.good.toggleStatus(id);
-        }
-      });
-      const label = newStatus === 'on' ? '上架' : '下架';
-      message.success(`已批量${label} ${selectedRowKeys.length} 件商品`);
-      setSelectedRowKeys([]);
+    const targets = selectedRowKeys
+      .map((id) => productList.find((item) => item.id === id))
+      .filter((record) => record && record.status !== newStatus);
+
+    if (targets.length === 0) return;
+
+    const label = newStatus === 'on' ? '上架' : '下架';
+    targets.forEach((record) => markPending(record.id));
+
+    const promises = targets.map((record) =>
+      services.good.setStatusOptimistic(record.id, newStatus, syncCallbacks())
+    );
+    message.success(`已批量${label} ${targets.length} 件商品`);
+    refresh();
+
+    Promise.allSettled(promises).then((results) => {
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      if (failed > 0) {
+        message.error(`${failed} 件商品操作失败，已回滚`);
+      }
+      targets.forEach((record) => clearPending(record.id));
       refresh();
-    } catch (err) {
-      message.error('批量操作失败');
-    }
+    });
+
+    setSelectedRowKeys([]);
   };
 
   // 批量删除
@@ -166,14 +199,19 @@ function AdminProductContent() {
       title: '批量删除',
       content: `确定要删除以下 ${selectedRowKeys.length} 件商品吗？此操作不可撤销。\n${names}`,
       onOk: () => {
-        try {
-          selectedRowKeys.forEach((id) => services.good.deleteGood(id));
-          message.success(`已删除 ${selectedRowKeys.length} 件商品`);
-          setSelectedRowKeys([]);
+        const callbacks = syncCallbacks();
+        const ids = [...selectedRowKeys];
+        message.success(`已删除 ${ids.length} 件商品`);
+        setSelectedRowKeys([]);
+        refresh();
+
+        Promise.allSettled(
+          ids.map((id) => services.good.deleteGoodOptimistic(id, callbacks))
+        ).then((results) => {
+          const failed = results.filter((r) => r.status === 'rejected').length;
+          if (failed > 0) message.error(`${failed} 件商品删除失败，已回滚`);
           refresh();
-        } catch (err) {
-          message.error('批量删除失败');
-        }
+        });
       },
     });
   };
@@ -228,6 +266,7 @@ function AdminProductContent() {
           checked={status === 'on'}
           checkedChildren="上架"
           unCheckedChildren="下架"
+          loading={pendingIds.has(record.id)}
           onChange={() => handleToggleStatus(record)}
           aria-label={`${record.name} 上下架`}
         />

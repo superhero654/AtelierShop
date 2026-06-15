@@ -1,5 +1,5 @@
 // src/pages/admin/AdminCategoryPage.jsx
-import { useState, useContext, useCallback } from 'react';
+import { useState, useContext, useCallback, useEffect } from 'react';
 import {
   Table, Button, Modal, Form, Input, Space, Tooltip, message,
 } from 'antd';
@@ -24,6 +24,10 @@ function AdminCategoryContent() {
     setGoods([...services.good.getGoodList()]);
   }, [services.category, services.good]);
 
+  useEffect(() => {
+    if (!services.loading?.categories) refresh();
+  }, [services.loading?.categories, refresh]);
+
   const getProductCount = (categoryId) => {
     return goods.filter((g) => g.categoryId === categoryId).length;
   };
@@ -47,20 +51,25 @@ function AdminCategoryContent() {
   const handleSubmit = () => {
     form.validateFields().then((values) => {
       setSubmitting(true);
-      try {
-        if (editing) {
-          services.category.updateCategory({ ...editing, ...values });
-          message.success('分类已更新');
-        } else {
-          services.category.addCategory(values);
-          message.success('分类已添加');
-        }
+      const callbacks = {
+        onSync: () => refresh(),
+        onRollback: () => refresh(),
+      };
+
+      if (editing) {
+        message.success('分类已更新');
         setModalOpen(false);
         refresh();
-      } catch (err) {
-        message.error('操作失败，请重试');
-      } finally {
-        setSubmitting(false);
+        services.category.updateCategoryOptimistic({ ...editing, ...values }, callbacks)
+          .catch(() => message.error('操作失败，已回滚'))
+          .finally(() => setSubmitting(false));
+      } else {
+        message.success('分类已添加');
+        setModalOpen(false);
+        refresh();
+        services.category.addCategoryOptimistic(values, callbacks)
+          .catch(() => message.error('操作失败，已回滚'))
+          .finally(() => setSubmitting(false));
       }
     }).catch(() => {});
   };
@@ -81,15 +90,15 @@ function AdminCategoryContent() {
       title: '确认删除',
       content: `确定要删除分类「${record.name}」吗？此操作不可撤销。`,
       onOk: () => {
-        try {
-          services.category.deleteCategory(record.id);
-          message.success('分类已删除');
-          refresh();
-        } catch (err) {
-          message.error('删除失败，请重试');
-        } finally {
-          setLoadingId(null);
-        }
+        const callbacks = {
+          onSync: () => refresh(),
+          onRollback: () => refresh(),
+        };
+        message.success('分类已删除');
+        refresh();
+        services.category.deleteCategoryOptimistic(record.id, callbacks)
+          .catch(() => message.error('删除失败，已回滚'))
+          .finally(() => setLoadingId(null));
       },
     });
   };

@@ -1,5 +1,5 @@
 // src/pages/admin/AdminOrderPage.jsx
-import { useState, useContext, useCallback, useMemo } from 'react';
+import { useState, useContext, useCallback, useMemo, useEffect } from 'react';
 import {
   Table, Button, Space, Tag, message, Tabs, Input, DatePicker,
   Row, Col, Drawer, Descriptions, Divider, Empty,
@@ -22,92 +22,6 @@ const STATUS_TABS = [
   { key: '4', label: '已取消' },
 ];
 
-function getActionButtons(status, orderId, services, refresh, setSelectedOrder) {
-  const handlePay = () => {
-    try {
-      const ok = services.order.payOrder(orderId);
-      if (ok) {
-        message.success('已标记为已付款');
-        refresh();
-        const updated = services.order.getOrderById(orderId);
-        if (updated) setSelectedOrder(updated);
-      } else {
-        message.error('操作失败，请确认订单状态');
-      }
-    } catch (err) {
-      message.error('操作失败');
-    }
-  };
-
-  const handleCancel = () => {
-    try {
-      if (status === 0) {
-        services.order.cancelOrder(orderId);
-      } else {
-        services.order.updateOrderStatus(orderId, 4);
-      }
-      message.success('订单已取消');
-      refresh();
-      const updated = services.order.getOrderById(orderId);
-      if (updated) setSelectedOrder(updated);
-    } catch (err) {
-      message.error('操作失败');
-    }
-  };
-
-  const handleShip = () => {
-    try {
-      const ok = services.order.shipOrder(orderId);
-      if (ok) {
-        message.success('已标记为已发货');
-        refresh();
-        const updated = services.order.getOrderById(orderId);
-        if (updated) setSelectedOrder(updated);
-      } else {
-        message.error('发货失败，请确认订单状态为已支付');
-      }
-    } catch (err) {
-      message.error('操作失败');
-    }
-  };
-
-  const handleComplete = () => {
-    try {
-      const ok = services.order.completeOrder(orderId);
-      if (ok) {
-        message.success('订单已完成');
-        refresh();
-        const updated = services.order.getOrderById(orderId);
-        if (updated) setSelectedOrder(updated);
-      } else {
-        message.error('操作失败，请确认订单状态');
-      }
-    } catch (err) {
-      message.error('操作失败');
-    }
-  };
-
-  return (
-    <Space size={4}>
-      {status === 0 && (
-        <>
-          <Button type="link" size="small" onClick={handlePay}>标记已付款</Button>
-          <Button type="link" size="small" danger onClick={handleCancel}>取消订单</Button>
-        </>
-      )}
-      {status === 1 && (
-        <>
-          <Button type="link" size="small" onClick={handleShip}>标记已发货</Button>
-          <Button type="link" size="small" danger onClick={handleCancel}>取消订单</Button>
-        </>
-      )}
-      {status === 2 && (
-        <Button type="link" size="small" onClick={handleComplete}>确认完成</Button>
-      )}
-    </Space>
-  );
-}
-
 function AdminOrderContent() {
   const services = useContext(ServiceContext);
   const [orderList, setOrderList] = useState(() => services.order.getAllOrders());
@@ -115,6 +29,7 @@ function AdminOrderContent() {
   const [activeTab, setActiveTab] = useState('');
   const [searchText, setSearchText] = useState('');
   const [dateRange, setDateRange] = useState(null);
+  const [pendingOrderIds, setPendingOrderIds] = useState(() => new Set());
 
   // Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -123,6 +38,86 @@ function AdminOrderContent() {
   const refresh = useCallback(() => {
     setOrderList([...services.order.getAllOrders()]);
   }, [services.order]);
+
+  useEffect(() => {
+    if (!services.loading?.orders) refresh();
+  }, [services.loading?.orders, refresh]);
+
+  const syncOrderView = useCallback((orderId) => {
+    refresh();
+    const updated = services.order.getOrderById(orderId);
+    if (updated) {
+      setSelectedOrder((prev) => (prev?.id === orderId ? updated : prev));
+    }
+  }, [refresh, services.order]);
+
+  const orderCallbacks = useCallback((orderId) => ({
+    onSync: () => syncOrderView(orderId),
+    onRollback: () => syncOrderView(orderId),
+  }), [syncOrderView]);
+
+  const markOrderPending = (orderId) => {
+    setPendingOrderIds((prev) => new Set(prev).add(orderId));
+  };
+
+  const clearOrderPending = (orderId) => {
+    setPendingOrderIds((prev) => {
+      const next = new Set(prev);
+      next.delete(orderId);
+      return next;
+    });
+  };
+
+  const runOrderAction = (orderId, action, successMsg) => {
+    if (pendingOrderIds.has(orderId)) return;
+    markOrderPending(orderId);
+    message.success(successMsg);
+    syncOrderView(orderId);
+
+    action(orderCallbacks(orderId))
+      .catch(() => message.error('操作失败，已回滚'))
+      .finally(() => clearOrderPending(orderId));
+  };
+
+  const getActionButtons = (status, orderId) => {
+    const handlePay = () => {
+      runOrderAction(orderId, (cb) => services.order.payOrderOptimistic(orderId, cb), '已标记为已付款');
+    };
+
+    const handleCancel = () => {
+      runOrderAction(orderId, (cb) => services.order.cancelOrderOptimistic(orderId, cb), '订单已取消');
+    };
+
+    const handleShip = () => {
+      runOrderAction(orderId, (cb) => services.order.shipOrderOptimistic(orderId, cb), '已标记为已发货');
+    };
+
+    const handleComplete = () => {
+      runOrderAction(orderId, (cb) => services.order.completeOrderOptimistic(orderId, cb), '订单已完成');
+    };
+
+    const disabled = pendingOrderIds.has(orderId);
+
+    return (
+      <Space size={4}>
+        {status === 0 && (
+          <>
+            <Button type="link" size="small" disabled={disabled} onClick={handlePay}>标记已付款</Button>
+            <Button type="link" size="small" danger disabled={disabled} onClick={handleCancel}>取消订单</Button>
+          </>
+        )}
+        {status === 1 && (
+          <>
+            <Button type="link" size="small" disabled={disabled} onClick={handleShip}>标记已发货</Button>
+            <Button type="link" size="small" danger disabled={disabled} onClick={handleCancel}>取消订单</Button>
+          </>
+        )}
+        {status === 2 && (
+          <Button type="link" size="small" disabled={disabled} onClick={handleComplete}>确认完成</Button>
+        )}
+      </Space>
+    );
+  };
 
   // 各状态数量（基于完整 orderList，不受筛选影响）
   const statusCounts = useMemo(() => {
@@ -227,7 +222,7 @@ function AdminOrderContent() {
           >
             查看详情
           </Button>
-          {getActionButtons(record.status, record.id, services, refresh, setSelectedOrder)}
+          {getActionButtons(record.status, record.id)}
         </Space>
       ),
     },
@@ -376,7 +371,7 @@ function AdminOrderContent() {
             {/* 操作区 */}
             {(selectedOrder.status === 0 || selectedOrder.status === 1 || selectedOrder.status === 2) && (
               <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-                {getActionButtons(selectedOrder.status, selectedOrder.id, services, refresh, setSelectedOrder)}
+                {getActionButtons(selectedOrder.status, selectedOrder.id)}
               </div>
             )}
           </>

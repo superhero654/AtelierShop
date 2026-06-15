@@ -7,14 +7,19 @@ import authService from '../services/authService';
 const ServiceContext = createContext();
 
 function ServiceProvider({ children }) {
-  const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState({
+    goods: true,
+    categories: true,
+    orders: true,
+  });
 
   useEffect(() => {
-    Promise.all([
-      goodService.fetchAll(),
-      categoryService.fetchAll(),
-      orderService.fetchAll(),
-    ]).then(() => setReady(true));
+    goodService.fetchAll()
+      .finally(() => setLoading((prev) => ({ ...prev, goods: false })));
+    categoryService.fetchAll()
+      .finally(() => setLoading((prev) => ({ ...prev, categories: false })));
+    orderService.fetchAll()
+      .finally(() => setLoading((prev) => ({ ...prev, orders: false })));
   }, []);
 
   const value = {
@@ -22,18 +27,8 @@ function ServiceProvider({ children }) {
     order: orderService,
     category: categoryService,
     auth: authService,
+    loading,
   };
-
-  if (!ready) {
-    return (
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: '100vh', fontSize: 18, color: '#666',
-      }}>
-        加载中…
-      </div>
-    );
-  }
 
   return (
     <ServiceContext.Provider value={value}>

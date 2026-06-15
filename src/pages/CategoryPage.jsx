@@ -19,7 +19,7 @@ export default function CategoryPage() {
       status: 'on',
       categoryId: Number(categoryId),
     });
-  }, [services.good, categoryId]);
+  }, [services.good, categoryId, services.loading?.goods]);
 
   return (
     <div className="container">

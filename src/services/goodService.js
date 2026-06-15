@@ -1,13 +1,12 @@
 /**
- * 商品服务 — 缓存式读写
- * 数据从 API 加载到本地缓存，读取同步，写入异步
+ * 商品服务 — 缓存式读写 + 乐观更新
  */
 import { api } from '../utils/api';
+import { optimisticMutation } from '../utils/optimisticMutation';
 
 class GoodService {
   list = [];
 
-  /** 从 API 加载数据 */
   async fetchAll() {
     this.list = await api.get('/goods');
   }
@@ -32,10 +31,42 @@ class GoodService {
     return this.list.find((g) => g.id === id) || null;
   }
 
+  _replaceInList(good) {
+    const idx = this.list.findIndex((g) => g.id === good.id);
+    if (idx >= 0) {
+      this.list[idx] = good;
+    }
+  }
+
+  _removeFromList(id) {
+    this.list = this.list.filter((g) => g.id !== id);
+  }
+
   async addGood(good) {
     const created = await api.post('/goods', good);
     this.list.push(created);
     return created;
+  }
+
+  addGoodOptimistic(good, { onSync, onRollback } = {}) {
+    const tempId = -Date.now();
+    const optimistic = { ...good, id: tempId };
+    this.list.push(optimistic);
+    onSync?.();
+
+    return optimisticMutation({
+      apply: () => {},
+      rollback: () => {
+        this._removeFromList(tempId);
+        onRollback?.();
+      },
+      request: () => api.post('/goods', good),
+      onSuccess: (created) => {
+        this._removeFromList(tempId);
+        this.list.push(created);
+        onSync?.();
+      },
+    });
   }
 
   async updateGood(good) {
@@ -44,15 +75,102 @@ class GoodService {
     return updated;
   }
 
+  updateGoodOptimistic(good, { onSync, onRollback } = {}) {
+    const previous = this.getGoodById(good.id);
+    if (!previous) return Promise.reject(new Error('商品不存在'));
+
+    const optimistic = { ...previous, ...good };
+    this._replaceInList(optimistic);
+    onSync?.();
+
+    return optimisticMutation({
+      apply: () => {},
+      rollback: () => {
+        this._replaceInList(previous);
+        onRollback?.();
+      },
+      request: () => api.put(`/goods/${good.id}`, good),
+      onSuccess: (updated) => {
+        this._replaceInList(updated);
+        onSync?.();
+      },
+    });
+  }
+
   async deleteGood(id) {
     await api.delete(`/goods/${id}`);
     this.list = this.list.filter((g) => g.id !== id);
+  }
+
+  deleteGoodOptimistic(id, { onSync, onRollback } = {}) {
+    const previous = this.getGoodById(id);
+    if (!previous) return Promise.reject(new Error('商品不存在'));
+
+    this._removeFromList(id);
+    onSync?.();
+
+    return optimisticMutation({
+      apply: () => {},
+      rollback: () => {
+        this.list.push(previous);
+        onSync?.();
+        onRollback?.();
+      },
+      request: () => api.delete(`/goods/${id}`),
+    });
   }
 
   async toggleStatus(id) {
     const updated = await api.patch(`/goods/${id}/toggle-status`);
     this.list = this.list.map((g) => (g.id === id ? updated : g));
     return updated;
+  }
+
+  toggleStatusOptimistic(id, { onSync, onRollback } = {}) {
+    const previous = this.getGoodById(id);
+    if (!previous) return Promise.reject(new Error('商品不存在'));
+
+    const nextStatus = previous.status === 'on' ? 'off' : 'on';
+    this._replaceInList({ ...previous, status: nextStatus });
+    onSync?.();
+
+    return optimisticMutation({
+      apply: () => {},
+      rollback: () => {
+        this._replaceInList(previous);
+        onSync?.();
+        onRollback?.();
+      },
+      request: () => api.patch(`/goods/${id}/toggle-status`),
+      onSuccess: (updated) => {
+        this._replaceInList(updated);
+        onSync?.();
+      },
+    });
+  }
+
+  setStatusOptimistic(id, status, { onSync, onRollback } = {}) {
+    const previous = this.getGoodById(id);
+    if (!previous || previous.status === status) {
+      return Promise.resolve(previous);
+    }
+
+    this._replaceInList({ ...previous, status });
+    onSync?.();
+
+    return optimisticMutation({
+      apply: () => {},
+      rollback: () => {
+        this._replaceInList(previous);
+        onSync?.();
+        onRollback?.();
+      },
+      request: () => api.put(`/goods/${id}`, { ...previous, status }),
+      onSuccess: (updated) => {
+        this._replaceInList(updated);
+        onSync?.();
+      },
+    });
   }
 }
 
