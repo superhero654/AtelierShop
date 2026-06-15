@@ -1,14 +1,13 @@
-import { useContext, useMemo, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ServiceContext } from '../contexts/ServiceContext';
 import Carousel from '../components/Carousel';
 import ProductCard from '../components/ProductCard';
 import { carouselSlides } from '../mock/seedData';
 import { fetchCarousel } from '../services/carouselService';
+import { useGoodList } from '../hooks/useCatalog';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
-  const services = useContext(ServiceContext);
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get('q') || '';
   const [slides, setSlides] = useState(carouselSlides);
@@ -25,16 +24,12 @@ export default function HomePage() {
       });
   }, []);
 
-  const products = useMemo(() => {
-    const filters = { status: 'on' };
-    if (keyword) filters.keyword = keyword;
-    return services.good.getGoodList(filters);
-  }, [services.good, keyword, services.loading?.goods]);
+  const products = useGoodList({
+    status: 'on',
+    ...(keyword ? { keyword } : {}),
+  });
 
-  const hotProducts = useMemo(
-    () => services.good.getGoodList({ status: 'on', hot: true }),
-    [services.good, services.loading?.goods]
-  );
+  const hotProducts = useGoodList({ status: 'on', hot: true });
 
   return (
     <div className="container">

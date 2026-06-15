@@ -1,30 +1,25 @@
-import { useContext, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ServiceContext } from '../contexts/ServiceContext';
 import ProductCard from '../components/ProductCard';
+import { useCategoryById, useCategoryList, useGoodList } from '../hooks/useCatalog';
 import styles from './CategoryPage.module.css';
 
 export default function CategoryPage() {
   const { categoryId } = useParams();
-  const services = useContext(ServiceContext);
-  const categories = services.category.getCategoryList();
+  const categories = useCategoryList();
+  const parsedCategoryId = categoryId ? Number(categoryId) : null;
+  const category = useCategoryById(parsedCategoryId);
 
-  const category = categoryId
-    ? services.category.getCategoryById(Number(categoryId))
-    : null;
+  const products = useGoodList(
+    parsedCategoryId
+      ? { status: 'on', categoryId: parsedCategoryId }
+      : { status: 'on', categoryId: 0 },
+  );
 
-  const products = useMemo(() => {
-    if (!categoryId) return [];
-    return services.good.getGoodList({
-      status: 'on',
-      categoryId: Number(categoryId),
-    });
-  }, [services.good, categoryId, services.loading?.goods]);
+  const displayProducts = parsedCategoryId ? products : [];
 
   return (
     <div className="container">
       <div className={styles.page}>
-        {/* ---- 左侧竖列分类导航（仿京东全部分类栏） ---- */}
         <nav className={styles.sidebar} aria-label="商品分类">
           <div className={styles.sidebarTitle}>全部商品分类</div>
           {categories.map((cat) => (
@@ -39,7 +34,6 @@ export default function CategoryPage() {
           ))}
         </nav>
 
-        {/* ---- 右侧内容区 ---- */}
         {categoryId && category ? (
           <div className={styles.content}>
             <div className={styles.breadcrumb}>
@@ -51,9 +45,9 @@ export default function CategoryPage() {
               <h1>{category.name}</h1>
               <span className={styles.desc}>{category.description}</span>
             </div>
-            {products.length > 0 ? (
+            {displayProducts.length > 0 ? (
               <div className={styles.productGrid}>
-                {products.map((p) => (
+                {displayProducts.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
               </div>

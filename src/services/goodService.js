@@ -1,14 +1,37 @@
 /**
- * 商品服务 — 缓存式读写 + 乐观更新
+ * 商品服务 — 缓存式读写 + 乐观更新 + 订阅通知
  */
 import { api } from '../utils/api';
 import { optimisticMutation } from '../utils/optimisticMutation';
+import { broadcastCatalogChange } from '../utils/dataSync';
 
 class GoodService {
   list = [];
 
+  _version = 0;
+
+  _subscribers = new Set();
+
+  subscribe(listener) {
+    this._subscribers.add(listener);
+    return () => this._subscribers.delete(listener);
+  }
+
+  getVersion() {
+    return this._version;
+  }
+
+  _notify(broadcast = false) {
+    this._version += 1;
+    this._subscribers.forEach((fn) => fn());
+    if (broadcast) {
+      broadcastCatalogChange('goods');
+    }
+  }
+
   async fetchAll() {
     this.list = await api.get('/goods');
+    this._notify(false);
   }
 
   getGoodList(filters = {}) {
@@ -45,6 +68,7 @@ class GoodService {
   async addGood(good) {
     const created = await api.post('/goods', good);
     this.list.push(created);
+    this._notify(true);
     return created;
   }
 
@@ -52,18 +76,21 @@ class GoodService {
     const tempId = -Date.now();
     const optimistic = { ...good, id: tempId };
     this.list.push(optimistic);
+    this._notify(true);
     onSync?.();
 
     return optimisticMutation({
       apply: () => {},
       rollback: () => {
         this._removeFromList(tempId);
+        this._notify(true);
         onRollback?.();
       },
       request: () => api.post('/goods', good),
       onSuccess: (created) => {
         this._removeFromList(tempId);
         this.list.push(created);
+        this._notify(false);
         onSync?.();
       },
     });
@@ -72,6 +99,7 @@ class GoodService {
   async updateGood(good) {
     const updated = await api.put(`/goods/${good.id}`, good);
     this.list = this.list.map((g) => (g.id === good.id ? updated : g));
+    this._notify(true);
     return updated;
   }
 
@@ -81,17 +109,20 @@ class GoodService {
 
     const optimistic = { ...previous, ...good };
     this._replaceInList(optimistic);
+    this._notify(true);
     onSync?.();
 
     return optimisticMutation({
       apply: () => {},
       rollback: () => {
         this._replaceInList(previous);
+        this._notify(true);
         onRollback?.();
       },
       request: () => api.put(`/goods/${good.id}`, good),
       onSuccess: (updated) => {
         this._replaceInList(updated);
+        this._notify(false);
         onSync?.();
       },
     });
@@ -100,6 +131,7 @@ class GoodService {
   async deleteGood(id) {
     await api.delete(`/goods/${id}`);
     this.list = this.list.filter((g) => g.id !== id);
+    this._notify(true);
   }
 
   deleteGoodOptimistic(id, { onSync, onRollback } = {}) {
@@ -107,12 +139,14 @@ class GoodService {
     if (!previous) return Promise.reject(new Error('商品不存在'));
 
     this._removeFromList(id);
+    this._notify(true);
     onSync?.();
 
     return optimisticMutation({
       apply: () => {},
       rollback: () => {
         this.list.push(previous);
+        this._notify(true);
         onSync?.();
         onRollback?.();
       },
@@ -123,6 +157,7 @@ class GoodService {
   async toggleStatus(id) {
     const updated = await api.patch(`/goods/${id}/toggle-status`);
     this.list = this.list.map((g) => (g.id === id ? updated : g));
+    this._notify(true);
     return updated;
   }
 
@@ -132,18 +167,21 @@ class GoodService {
 
     const nextStatus = previous.status === 'on' ? 'off' : 'on';
     this._replaceInList({ ...previous, status: nextStatus });
+    this._notify(true);
     onSync?.();
 
     return optimisticMutation({
       apply: () => {},
       rollback: () => {
         this._replaceInList(previous);
+        this._notify(true);
         onSync?.();
         onRollback?.();
       },
       request: () => api.patch(`/goods/${id}/toggle-status`),
       onSuccess: (updated) => {
         this._replaceInList(updated);
+        this._notify(false);
         onSync?.();
       },
     });
@@ -156,18 +194,21 @@ class GoodService {
     }
 
     this._replaceInList({ ...previous, status });
+    this._notify(true);
     onSync?.();
 
     return optimisticMutation({
       apply: () => {},
       rollback: () => {
         this._replaceInList(previous);
+        this._notify(true);
         onSync?.();
         onRollback?.();
       },
       request: () => api.put(`/goods/${id}`, { ...previous, status }),
       onSuccess: (updated) => {
         this._replaceInList(updated);
+        this._notify(false);
         onSync?.();
       },
     });

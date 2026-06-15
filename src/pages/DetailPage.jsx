@@ -3,13 +3,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ServiceContext } from '../contexts/ServiceContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { useCategoryById, useGoodById } from '../hooks/useCatalog';
 import { formatPrice } from '../utils/format';
 import styles from './DetailPage.module.css';
 
 export default function DetailPage() {
   const { goodId } = useParams();
   const parsedGoodId = parseInt(goodId, 10);
-  const services = useContext(ServiceContext);
+  const { loading } = useContext(ServiceContext);
   const { isLoggedIn } = useAuth();
   const { addToCart } = useCart();
   const navigate = useNavigate();
@@ -17,16 +18,26 @@ export default function DetailPage() {
   const [count, setCount] = useState(1);
   const [toast, setToast] = useState('');
 
-  const good = services.good.getGoodById(parsedGoodId);
-  const category = good ? services.category.getCategoryById(good.categoryId) : null;
+  const good = useGoodById(parsedGoodId);
+  const category = useCategoryById(good?.categoryId ?? null);
 
   useEffect(() => {
-    if (!good) {
+    if (!loading?.goods && !good) {
       navigate('/');
     }
-  }, [good, navigate]);
+  }, [good, loading?.goods, navigate]);
 
   if (!good || good.status === 'off') {
+    if (loading?.goods) {
+      return (
+        <div className="container">
+          <div className="empty-state">
+            <h3>加载中…</h3>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="container">
         <div className="empty-state">
